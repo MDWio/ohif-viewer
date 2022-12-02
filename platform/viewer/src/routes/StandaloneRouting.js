@@ -1,36 +1,66 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-console */
 import React, { Component } from 'react';
-import OHIF from '@ohif/core';
+import { metadata, utils, log } from '@ohif/core';
 import PropTypes from 'prop-types';
 import qs from 'querystring';
 
 import { extensionManager } from './../App.js';
+import filesToStudies from '../lib/filesToStudies';
 import ConnectedViewer from '../connectedComponents/ConnectedViewer';
-import ConnectedViewerRetrieveStudyData from '../connectedComponents/ConnectedViewerRetrieveStudyData';
 import NotFound from '../routes/NotFound';
+import { result } from 'lodash';
 
-const { log, metadata, utils } = OHIF;
 const { studyMetadataManager } = utils;
 const { OHIFStudyMetadata } = metadata;
 
 class StandaloneRouting extends Component {
-  state = {
-    studies: null,
-    server: null,
-    studyInstanceUIDs: null,
-    seriesInstanceUIDs: null,
-    error: null,
-    loading: true,
+  static propTypes = {
+    studies: PropTypes.array,
+    location: PropTypes.object,
   };
 
-  static propTypes = {
-    location: PropTypes.object,
-    store: PropTypes.object,
-    setServers: PropTypes.func,
+  state = {
+    studies: null,
+    loading: false,
+    error: null,
+  };
+
+  updateStudies = studies => {
+    // Render the viewer when the data is ready
+    studyMetadataManager.purge();
+
+    // Map studies to new format, update metadata manager?
+    const updatedStudies = studies.map(study => {
+      const studyMetadata = new OHIFStudyMetadata(
+        study,
+        study.StudyInstanceUID
+      );
+      const sopClassHandlerModules =
+        extensionManager.modules['sopClassHandlerModule'];
+
+      study.displaySets =
+        study.displaySets ||
+        studyMetadata.createDisplaySets(sopClassHandlerModules);
+
+      studyMetadata.forEachDisplaySet(displayset => {
+        displayset.localFile = true;
+      });
+
+      studyMetadataManager.add(studyMetadata);
+
+      return study;
+    });
+
+    this.setState({
+      studies: updatedStudies,
+    });
   };
 
   parseQueryAndRetrieveDICOMWebData(query) {
     return new Promise((resolve, reject) => {
       const url = query.url;
+      const token = query.authToken;
 
       if (!url) {
         return reject(new Error('No URL was specified. Use ?url=$yourURL'));
@@ -48,7 +78,7 @@ class StandaloneRouting extends Component {
 
       // When the JSON has been returned, parse it into a JavaScript Object
       // and render the OHIF Viewer with this data
-      oReq.addEventListener('load', event => {
+      oReq.addEventListener('load', async event => {
         if (event.target.status === 404) {
           reject(new Error('No JSON data found'));
         }
@@ -60,64 +90,51 @@ class StandaloneRouting extends Component {
           reject(new Error('Response was undefined'));
         }
 
-        log.info(JSON.stringify(oReq.responseText, null, 2));
-
         const data = JSON.parse(oReq.responseText);
-        if (data.servers) {
-          if (!query.studyInstanceUIDs) {
-            log.warn('No study instance uids specified');
-            reject(new Error('No study instance uids specified'));
-          }
 
-          const server = data.servers.dicomWeb[0];
-          server.type = 'dicomWeb';
-
-          log.warn('Activating server', server);
-          this.props.activateServer(server);
-
-          const studyInstanceUIDs = query.studyInstanceUIDs.split(';');
-          const seriesInstanceUIDs = query.seriesInstanceUIDs
-            ? query.seriesInstanceUIDs.split(';')
-            : [];
-
-          resolve({ server, studyInstanceUIDs, seriesInstanceUIDs });
-        } else {
-          // Parse data here and add to metadata provider.
-          const metadataProvider = OHIF.cornerstone.metadataProvider;
-
-          let StudyInstanceUID;
-          let SeriesInstanceUID;
-
-          data.studies.forEach(study => {
-            StudyInstanceUID = study.StudyInstanceUID;
-
-            study.series.forEach(series => {
-              SeriesInstanceUID = series.SeriesInstanceUID;
-
-              series.instances.forEach(instance => {
-                const { url: imageId, metadata: naturalizedDicom } = instance;
-
-                // Add instance to metadata provider.
-                metadataProvider.addInstance(naturalizedDicom);
-                // Add imageId specific mapping to this data as the URL isn't necessarliy WADO-URI.
-                metadataProvider.addImageIdToUIDs(imageId, {
-                  StudyInstanceUID,
-                  SeriesInstanceUID,
-                  SOPInstanceUID: naturalizedDicom.SOPInstanceUID,
-                });
-              });
-            });
-          });
-
-          resolve({ studies: data.studies, studyInstanceUIDs: [] });
+        if (data.success === false) {
+          this.setState({ error: data.message, loading: false });
         }
+
+        let studyFiles = [];
+        // let promiseQueue = [];
+        let i = 0;
+
+        this.setState({ loading: true });
+
+        for (const link of data) {
+          let blob = await fetch(link).then(r => r.blob());
+          const file = new File([blob], 'name' + i++);
+          studyFiles.push(file);
+        }
+
+        this.setState({ loading: false });
+
+        resolve({ studyFiles: studyFiles });
+
+        // for (const link of data) {
+        //   promiseQueue.push(fetch(link));
+        // }
+
+        // Promise.allSettled(promiseQueue).then(async results => {
+        //   for (const result of results) {
+        //     let blob = await result.value.blob();
+        //     const file = new File([blob], 'name' + i++);
+        //     studyFiles.push(file);
+        //   }
+
+        //   this.setState({ loading: false });
+
+        //   resolve({ studyFiles });
+        // });
       });
 
       // Open the Request to the server for the JSON data
       // In this case we have a server-side route called /api/
-      // which responds to GET requests with the study data
+      // which responds to POST requests with the study data
       log.info(`Sending Request to: ${url}`);
-      oReq.open('GET', url);
+      oReq.open('POST', url);
+      oReq.setRequestHeader('Authorization', 'Basic ' + token);
       oReq.setRequestHeader('Accept', 'application/json');
 
       // Fire the request to the server
@@ -133,29 +150,16 @@ class StandaloneRouting extends Component {
       search = search.slice(1, search.length);
       const query = qs.parse(search);
 
-      let {
-        server,
-        studies,
-        studyInstanceUIDs,
-        seriesInstanceUIDs,
-      } = await this.parseQueryAndRetrieveDICOMWebData(query);
+      let { studyFiles } = await this.parseQueryAndRetrieveDICOMWebData(query);
+      const studies = await filesToStudies(studyFiles);
+      const updatedStudies = this.updateStudies(studies);
 
-      if (studies) {
-        const {
-          studies: updatedStudies,
-          studyInstanceUIDs: updatedStudiesInstanceUIDs,
-        } = _mapStudiesToNewFormat(studies);
-        studies = updatedStudies;
-        studyInstanceUIDs = updatedStudiesInstanceUIDs;
+      if (!updatedStudies) {
+        console.log('no updated studies');
+        return;
       }
 
-      this.setState({
-        studies,
-        server,
-        studyInstanceUIDs,
-        seriesInstanceUIDs,
-        loading: false,
-      });
+      this.setState({ studies: updatedStudies, loading: false });
     } catch (error) {
       this.setState({ error: error.message, loading: false });
     }
@@ -170,41 +174,16 @@ class StandaloneRouting extends Component {
     }
 
     return this.state.studies ? (
-      <ConnectedViewer studies={this.state.studies} />
-    ) : (
-      <ConnectedViewerRetrieveStudyData
-        studyInstanceUIDs={this.state.studyInstanceUIDs}
-        seriesInstanceUIDs={this.state.seriesInstanceUIDs}
-        server={this.state.server}
+      <ConnectedViewer
+        studies={this.state.studies}
+        studyInstanceUIDs={
+          this.state.studies && this.state.studies.map(a => a.StudyInstanceUID)
+        }
       />
+    ) : (
+      <h3> Loading... </h3>
     );
   }
 }
-
-const _mapStudiesToNewFormat = studies => {
-  studyMetadataManager.purge();
-
-  /* Map studies to new format, update metadata manager? */
-  const uniqueStudyUIDs = new Set();
-  const updatedStudies = studies.map(study => {
-    const studyMetadata = new OHIFStudyMetadata(study, study.StudyInstanceUID);
-
-    const sopClassHandlerModules =
-      extensionManager.modules['sopClassHandlerModule'];
-    study.displaySets =
-      study.displaySets ||
-      studyMetadata.createDisplaySets(sopClassHandlerModules);
-
-    studyMetadataManager.add(studyMetadata);
-    uniqueStudyUIDs.add(study.StudyInstanceUID);
-
-    return study;
-  });
-
-  return {
-    studies: updatedStudies,
-    studyInstanceUIDs: Array.from(uniqueStudyUIDs),
-  };
-};
 
 export default StandaloneRouting;

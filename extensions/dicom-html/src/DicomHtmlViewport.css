@@ -8,4 +8,33 @@
   width: 100%;
   height: 100%;
   color: var(--text-color-primary);
+  font-size: 12pt;
+}
+
+.report-date {
+  font-size: 14pt;
+}
+
+.secondary-color {
+  color: var(--text-secondary-color);
+}
+
+.sr-header-color {
+  color: var(--text-secondary-color);
+  font-weight: bold;
+  font-size: 13pt;
+}
+
+.sr-title-field-color {
+  font-weight: bold;
+}
+
+.sr-hr {
+  border-color: var(--text-secondary-color);
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.sr-header {
+  margin-top: 4px;
 }
