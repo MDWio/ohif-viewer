@@ -24,6 +24,8 @@ class StandaloneRouting extends Component {
     studies: null,
     loading: false,
     error: null,
+    loadedImages: 0,
+    allImages: 0,
   };
 
   updateStudies = studies => {
@@ -100,12 +102,14 @@ class StandaloneRouting extends Component {
         // let promiseQueue = [];
         let i = 0;
 
+        this.setState({ allImages: data.length });
         this.setState({ loading: true });
 
         for (const link of data) {
           let blob = await fetch(link).then(r => r.blob());
           const file = new File([blob], 'name' + i++);
           studyFiles.push(file);
+          this.setState({ loadedImages: i });
         }
 
         this.setState({ loading: false });
@@ -168,7 +172,7 @@ class StandaloneRouting extends Component {
   render() {
     const message = this.state.error
       ? `Error: ${JSON.stringify(this.state.error)}`
-      : 'Loading...';
+      : `Loading... ${this.state.loadedImages} of ${this.state.allImages} images completed`;
     if (this.state.error || this.state.loading) {
       return <NotFound message={message} showGoBackButton={this.state.error} />;
     }
