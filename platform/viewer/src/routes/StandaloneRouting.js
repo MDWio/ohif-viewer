@@ -135,9 +135,9 @@ class StandaloneRouting extends Component {
 
       // Open the Request to the server for the JSON data
       // In this case we have a server-side route called /api/
-      // which responds to POST requests with the study data
+      // which responds to GET requests with the study data
       log.info(`Sending Request to: ${url}`);
-      oReq.open('POST', url);
+      oReq.open('GET', url);
       oReq.setRequestHeader('Authorization', 'Basic ' + token);
       oReq.setRequestHeader('Accept', 'application/json');
 
@@ -156,14 +156,7 @@ class StandaloneRouting extends Component {
 
       let { studyFiles } = await this.parseQueryAndRetrieveDICOMWebData(query);
       const studies = await filesToStudies(studyFiles);
-      const updatedStudies = this.updateStudies(studies);
-
-      if (!updatedStudies) {
-        console.log('no updated studies');
-        return;
-      }
-
-      this.setState({ studies: updatedStudies, loading: false });
+      this.updateStudies(studies);
     } catch (error) {
       this.setState({ error: error.message, loading: false });
     }

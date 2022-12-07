@@ -50,14 +50,12 @@ export default function init({ servicesManager, configuration }) {
     },
   } = configuration;
 
-  // comment out if metadata is not displayed
   const metadataProvider = OHIF.cornerstone.metadataProvider;
 
   cornerstone.metaData.addProvider(
     metadataProvider.get.bind(metadataProvider),
     9999
   );
-  // end
 
   // ~~
   const defaultCsToolsConfig = csToolsConfig || {
