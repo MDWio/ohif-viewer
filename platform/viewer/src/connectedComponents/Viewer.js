@@ -305,7 +305,7 @@ class Viewer extends Component {
     return (
       <>
         {/* HEADER */}
-        <WhiteLabelingContext.Consumer>
+        {/* <WhiteLabelingContext.Consumer>
           {whiteLabeling => (
             <UserManagerContext.Consumer>
               {userManager => (
@@ -331,7 +331,7 @@ class Viewer extends Component {
               )}
             </UserManagerContext.Consumer>
           )}
-        </WhiteLabelingContext.Consumer>
+        </WhiteLabelingContext.Consumer> */}
         {/* TOOLBAR */}
         <ErrorBoundaryDialog context="ToolbarRow">
           <ToolbarRow

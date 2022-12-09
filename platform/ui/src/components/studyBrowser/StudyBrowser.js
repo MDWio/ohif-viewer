@@ -33,6 +33,10 @@ function StudyBrowser(props) {
                 hasDerivedDisplaySets,
               } = thumb;
 
+              if (altImageText === 'GrayscaleSoftcopyPresentationState') {
+                return;
+              }
+
               return (
                 <div
                   key={thumb.displaySetInstanceUID}

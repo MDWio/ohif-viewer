@@ -49,6 +49,7 @@ export default function init({ servicesManager, configuration }) {
       maxSimultaneousRequests: 20,
     },
   } = configuration;
+
   const metadataProvider = OHIF.cornerstone.metadataProvider;
 
   cornerstone.metaData.addProvider(

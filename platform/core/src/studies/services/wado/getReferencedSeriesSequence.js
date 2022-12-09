@@ -18,7 +18,8 @@ const getReferencedSeriesSequence = instance => {
         referencedSeries['0020000E']
       );
 
-      const referencedInstanceSequenceRaw = referencedSeries['0008114A'];
+      const referencedInstanceSequenceRaw =
+        referencedSeries['0008114A'] || referencedSeries['00081140'];
       const referencedInstanceSequence = [];
 
       if (referencedInstanceSequenceRaw) {
