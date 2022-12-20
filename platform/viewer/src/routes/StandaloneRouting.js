@@ -1,62 +1,30 @@
-/* eslint-disable no-unused-vars */
 /* eslint-disable no-console */
 import React, { Component } from 'react';
-import { metadata, utils, log } from '@ohif/core';
+import OHIF from '@ohif/core';
 import PropTypes from 'prop-types';
 import qs from 'querystring';
 
 import { extensionManager } from './../App.js';
-import filesToStudies from '../lib/filesToStudies';
 import ConnectedViewer from '../connectedComponents/ConnectedViewer';
 import NotFound from '../routes/NotFound';
-import { result } from 'lodash';
 
+const { log, metadata, utils } = OHIF;
 const { studyMetadataManager } = utils;
 const { OHIFStudyMetadata } = metadata;
 
 class StandaloneRouting extends Component {
-  static propTypes = {
-    studies: PropTypes.array,
-    location: PropTypes.object,
-  };
-
   state = {
     studies: null,
-    loading: false,
+    studyInstanceUIDs: null,
+    seriesInstanceUIDs: null,
     error: null,
-    loadedImages: 0,
-    allImages: 0,
+    loading: true,
   };
 
-  updateStudies = studies => {
-    // Render the viewer when the data is ready
-    studyMetadataManager.purge();
-
-    // Map studies to new format, update metadata manager?
-    const updatedStudies = studies.map(study => {
-      const studyMetadata = new OHIFStudyMetadata(
-        study,
-        study.StudyInstanceUID
-      );
-      const sopClassHandlerModules =
-        extensionManager.modules['sopClassHandlerModule'];
-
-      study.displaySets =
-        study.displaySets ||
-        studyMetadata.createDisplaySets(sopClassHandlerModules);
-
-      studyMetadata.forEachDisplaySet(displayset => {
-        displayset.localFile = true;
-      });
-
-      studyMetadataManager.add(studyMetadata);
-
-      return study;
-    });
-
-    this.setState({
-      studies: updatedStudies,
-    });
+  static propTypes = {
+    location: PropTypes.object,
+    store: PropTypes.object,
+    setServers: PropTypes.func,
   };
 
   parseQueryAndRetrieveDICOMWebData(query) {
@@ -93,44 +61,34 @@ class StandaloneRouting extends Component {
         }
 
         const data = JSON.parse(oReq.responseText);
+        // Parse data here and add to metadata provider.
+        const metadataProvider = OHIF.cornerstone.metadataProvider;
 
-        if (data.success === false) {
-          this.setState({ error: data.message, loading: false });
+        let StudyInstanceUID;
+        let SeriesInstanceUID;
+
+        for (const study of data.studies) {
+          StudyInstanceUID = study.StudyInstanceUID;
+
+          for (const series of study.series) {
+            SeriesInstanceUID = series.SeriesInstanceUID;
+
+            for (const instance of series.instances) {
+              const { url: imageId, metadata: naturalizedDicom } = instance;
+
+              // Add instance to metadata provider.
+              metadataProvider.addInstance(naturalizedDicom);
+              // Add imageId specific mapping to this data as the URL isn't necessarliy WADO-URI.
+              metadataProvider.addImageIdToUIDs(imageId, {
+                StudyInstanceUID,
+                SeriesInstanceUID,
+                SOPInstanceUID: naturalizedDicom.SOPInstanceUID,
+              });
+            }
+          }
         }
 
-        let studyFiles = [];
-        // let promiseQueue = [];
-        let i = 0;
-
-        this.setState({ allImages: data.length });
-        this.setState({ loading: true });
-
-        for (const link of data) {
-          let blob = await fetch(link).then(r => r.blob());
-          const file = new File([blob], 'name' + i++);
-          studyFiles.push(file);
-          this.setState({ loadedImages: i });
-        }
-
-        this.setState({ loading: false });
-
-        resolve({ studyFiles: studyFiles });
-
-        // for (const link of data) {
-        //   promiseQueue.push(fetch(link));
-        // }
-
-        // Promise.allSettled(promiseQueue).then(async results => {
-        //   for (const result of results) {
-        //     let blob = await result.value.blob();
-        //     const file = new File([blob], 'name' + i++);
-        //     studyFiles.push(file);
-        //   }
-
-        //   this.setState({ loading: false });
-
-        //   resolve({ studyFiles });
-        // });
+        resolve({ studies: data.studies, studyInstanceUIDs: [] });
       });
 
       // Open the Request to the server for the JSON data
@@ -154,9 +112,27 @@ class StandaloneRouting extends Component {
       search = search.slice(1, search.length);
       const query = qs.parse(search);
 
-      let { studyFiles } = await this.parseQueryAndRetrieveDICOMWebData(query);
-      const studies = await filesToStudies(studyFiles);
-      this.updateStudies(studies);
+      let {
+        studies,
+        studyInstanceUIDs,
+        seriesInstanceUIDs,
+      } = await this.parseQueryAndRetrieveDICOMWebData(query);
+
+      if (studies) {
+        const {
+          studies: updatedStudies,
+          studyInstanceUIDs: updatedStudiesInstanceUIDs,
+        } = _mapStudiesToNewFormat(studies);
+        studies = updatedStudies;
+        studyInstanceUIDs = updatedStudiesInstanceUIDs;
+      }
+
+      this.setState({
+        studies,
+        studyInstanceUIDs,
+        seriesInstanceUIDs,
+        loading: false,
+      });
     } catch (error) {
       this.setState({ error: error.message, loading: false });
     }
@@ -165,22 +141,44 @@ class StandaloneRouting extends Component {
   render() {
     const message = this.state.error
       ? `Error: ${JSON.stringify(this.state.error)}`
-      : `Loading... ${this.state.loadedImages} of ${this.state.allImages} images completed`;
+      : `Loading...`;
     if (this.state.error || this.state.loading) {
       return <NotFound message={message} showGoBackButton={this.state.error} />;
     }
 
-    return this.state.studies ? (
-      <ConnectedViewer
-        studies={this.state.studies}
-        studyInstanceUIDs={
-          this.state.studies && this.state.studies.map(a => a.StudyInstanceUID)
-        }
-      />
-    ) : (
-      <h3> Loading... </h3>
-    );
+    if (this.state.studies) {
+      return <ConnectedViewer studies={this.state.studies} />;
+    } else {
+      const unknownError = `There happened error while loading viewer`;
+      return <NotFound message={unknownError} />;
+    }
   }
 }
+
+const _mapStudiesToNewFormat = studies => {
+  studyMetadataManager.purge();
+
+  /* Map studies to new format, update metadata manager? */
+  const uniqueStudyUIDs = new Set();
+  const updatedStudies = studies.map(study => {
+    const studyMetadata = new OHIFStudyMetadata(study, study.StudyInstanceUID);
+
+    const sopClassHandlerModules =
+      extensionManager.modules['sopClassHandlerModule'];
+    study.displaySets =
+      study.displaySets ||
+      studyMetadata.createDisplaySets(sopClassHandlerModules);
+
+    studyMetadataManager.add(studyMetadata);
+    uniqueStudyUIDs.add(study.StudyInstanceUID);
+
+    return study;
+  });
+
+  return {
+    studies: updatedStudies,
+    studyInstanceUIDs: Array.from(uniqueStudyUIDs),
+  };
+};
 
 export default StandaloneRouting;
