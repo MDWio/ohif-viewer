@@ -109,7 +109,7 @@ class DicomLoaderService {
     }
   }
 
-  getDataByImageType(dataset) {
+  async getDataByImageType(dataset, studies) {
     const imageInstance = getImageInstance(dataset);
 
     if (imageInstance) {
@@ -121,6 +121,14 @@ class DicomLoaderService {
         case 'dicomfile':
           getDicomDataMethod = cornerstoneRetriever.bind(this, imageId);
           break;
+        case 'dicomweb': {
+          const imageLink = imageId.replace('dicomweb:', '');
+          let blob = await fetch(imageLink).then(r => r.blob());
+          const file = new File([blob], 'name');
+
+          const imagePath = cornerstoneWADOImageLoader.wadouri.fileManager.add(file);
+          return cornerstoneWADOImageLoader.wadouri.loadFileRequest(imagePath);
+        }
         case 'wadors':
           const url = imageInstance.getData().wadoRoot;
           const studyInstanceUID = imageInstance.getStudyInstanceUID();
@@ -156,6 +164,17 @@ class DicomLoaderService {
       }
 
       return getDicomDataMethod();
+    } else if (studies[0].displaySets[0].Modality === 'DOC') {
+      const link = studies[0].series[0].instances[0].url.replace('dicomweb:', '');
+
+      let blob = await fetch(link).then(r => r.blob());
+      const file = new File([blob], 'name');
+
+      const imagePath = cornerstoneWADOImageLoader.wadouri.fileManager.add(
+        file
+      );
+
+      return cornerstoneWADOImageLoader.wadouri.loadFileRequest(imagePath);
     }
   }
 
@@ -184,7 +203,7 @@ class DicomLoaderService {
 
   *getLoaderIterator(dataset, studies) {
     yield this.getLocalData(dataset, studies);
-    yield this.getDataByImageType(dataset);
+    yield this.getDataByImageType(dataset, studies);
     yield this.getDataByDatasetType(dataset);
   }
 
