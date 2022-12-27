@@ -170,9 +170,7 @@ class DicomLoaderService {
       let blob = await fetch(link).then(r => r.blob());
       const file = new File([blob], 'name');
 
-      const imagePath = cornerstoneWADOImageLoader.wadouri.fileManager.add(
-        file
-      );
+      const imagePath = cornerstoneWADOImageLoader.wadouri.fileManager.add(file);
 
       return cornerstoneWADOImageLoader.wadouri.loadFileRequest(imagePath);
     }
