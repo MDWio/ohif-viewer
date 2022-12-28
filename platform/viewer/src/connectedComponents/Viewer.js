@@ -5,7 +5,6 @@ import OHIF, { MODULE_TYPES, DICOMSR } from '@ohif/core';
 import { withDialog } from '@ohif/ui';
 import moment from 'moment';
 
-import ConnectedHeader from './ConnectedHeader.js';
 import ToolbarRow from './ToolbarRow.js';
 import ConnectedStudyBrowser from './ConnectedStudyBrowser.js';
 import ConnectedViewerMain from './ConnectedViewerMain.js';
@@ -15,8 +14,6 @@ import { extensionManager, servicesManager } from './../App.js';
 import { ReconstructionIssues } from './../../../core/src/enums.js';
 
 // Contexts
-import WhiteLabelingContext from '../context/WhiteLabelingContext.js';
-import UserManagerContext from '../context/UserManagerContext';
 import AppContext from '../context/AppContext';
 
 import './Viewer.css';
@@ -289,14 +286,12 @@ class Viewer extends Component {
   }
 
   render() {
-    let VisiblePanelLeft, VisiblePanelRight;
+    let VisiblePanelLeft;
     const panelExtensions = extensionManager.modules[MODULE_TYPES.PANEL];
 
     panelExtensions.forEach(panelExt => {
       panelExt.module.components.forEach(comp => {
-        if (comp.id === this.state.selectedRightSidePanel) {
-          VisiblePanelRight = comp.component;
-        } else if (comp.id === this.state.selectedLeftSidePanel) {
+        if (comp.id === this.state.selectedLeftSidePanel) {
           VisiblePanelLeft = comp.component;
         }
       });
@@ -438,7 +433,7 @@ class Viewer extends Component {
           </div>
 
           {/* RIGHT */}
-          <ErrorBoundaryDialog context="RightSidePanel">
+          {/* <ErrorBoundaryDialog context="RightSidePanel">
             <SidePanel from="right" isOpen={this.state.isRightSidePanelOpen}>
               {VisiblePanelRight && (
                 <VisiblePanelRight
@@ -453,7 +448,7 @@ class Viewer extends Component {
                 />
               )}
             </SidePanel>
-          </ErrorBoundaryDialog>
+          </ErrorBoundaryDialog> */}
         </div>
       </>
     );
