@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import './ViewerMain.css';
 import { servicesManager } from './../App.js';
 import { Component } from 'react';
@@ -200,6 +201,18 @@ class ViewerMain extends Component {
     if (displaySet.isSOPClassUIDSupported === false) {
       const error = new Error('Modality not supported');
       const message = 'Modality not supported';
+      LoggerService.error({ error, message });
+      UINotificationService.show({
+        autoClose: false,
+        title: 'Fail to load series',
+        message,
+        type: 'error',
+      });
+    }
+
+    if (displaySet.images[0]._data.metadata.PhotometricInterpretation === 'YBR_FULL') {
+      const error = new Error(`Color mode 'YBR Full' not supported`);
+      const message = `Color mode 'YBR Full' not supported`;
       LoggerService.error({ error, message });
       UINotificationService.show({
         autoClose: false,
