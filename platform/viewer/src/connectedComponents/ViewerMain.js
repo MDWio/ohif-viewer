@@ -210,7 +210,8 @@ class ViewerMain extends Component {
       });
     }
 
-    if (displaySet.images[0]._data.metadata.PhotometricInterpretation === 'YBR_FULL') {
+    if (displaySet && displaySet.images[0] && displaySet.images[0]._data && displaySet.images[0]._data.metadata
+      && displaySet.images[0]._data.metadata.PhotometricInterpretation === 'YBR_FULL') {
       const error = new Error(`Color mode 'YBR Full' not supported`);
       const message = `Color mode 'YBR Full' not supported`;
       LoggerService.error({ error, message });
