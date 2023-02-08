@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import OHIF from '@ohif/core';
 import { connect } from 'react-redux';
 import findDisplaySetByUID from './findDisplaySetByUID';
@@ -90,6 +91,19 @@ const mapDispatchToProps = (dispatch, ownProps) => {
       if (displaySet.isSOPClassUIDSupported === false) {
         const error = new Error('Modality not supported');
         const message = 'Modality not supported';
+        LoggerService.error({ error, message });
+        UINotificationService.show({
+          autoClose: false,
+          title: 'Fail to load series',
+          message,
+          type: 'error',
+        });
+      }
+
+      if (displaySet && displaySet.images[0] && displaySet.images[0]._data && displaySet.images[0]._data.metadata
+        && displaySet.images[0]._data.metadata.PhotometricInterpretation === 'YBR_FULL') {
+        const error = new Error(`Color mode 'YBR Full' is not supported`);
+        const message = `Color mode 'YBR Full' is not supported`;
         LoggerService.error({ error, message });
         UINotificationService.show({
           autoClose: false,

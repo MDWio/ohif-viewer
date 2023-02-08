@@ -25,11 +25,13 @@ const StandaloneRouting = asyncComponent(() =>
     )
   )
 );
-// const ViewerLocalFileData = asyncComponent(() =>
-//   retryImport(() => import(
-//     /* webpackChunkName: "ViewerLocalFileData" */ '../connectedComponents/ViewerLocalFileData.js'
-//   ))
-// );
+const ViewerLocalFileData = asyncComponent(() =>
+  retryImport(() =>
+    import(
+      /* webpackChunkName: "ViewerLocalFileData" */ '../connectedComponents/ViewerLocalFileData.js'
+    )
+  )
+);
 
 const reload = () => window.location.reload();
 
@@ -50,10 +52,10 @@ const ROUTES_DEF = {
     //     return appConfig.showStudyList;
     //   },
     // },
-    // local: {
-    //   path: '/local',
-    //   component: ViewerLocalFileData,
-    // },
+    local: {
+      path: '/local',
+      component: ViewerLocalFileData,
+    },
     // IHEInvokeImageDisplay: {
     //   path: '/IHEInvokeImageDisplay',
     //   component: IHEInvokeImageDisplay,
