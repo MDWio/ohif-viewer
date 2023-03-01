@@ -24,9 +24,9 @@ const mapDispatchToProps = (dispatch, ownProps) => {
             const message =
               error.message.includes('orthogonal') ||
               error.message.includes('oblique')
-                ? 'The segmentation has been detected as not planar,\
-          If you really think it is planar,\
-          please adjust the tolerance in the segmentation panel settings (at your own peril!)'
+                ? 'The segmentation has been detected as non coplanar,\
+                If you really think it is coplanar,\
+                please adjust the tolerance in the segmentation panel settings (at your own peril!)'
                 : error.message;
 
             LoggerService.error({ error, message });
@@ -55,7 +55,9 @@ const mapDispatchToProps = (dispatch, ownProps) => {
                 detail: { activatedLabelmapIndex: activatedLabelmapIndex },
               }
             );
+            const segThumbnailSelected = new CustomEvent('segseriesselected');
             document.dispatchEvent(selectionFired);
+            document.dispatchEvent(segThumbnailSelected);
           });
         } else if (Modality !== 'SR') {
           displaySet = displaySet.getSourceDisplaySet(ownProps.studyMetadata);

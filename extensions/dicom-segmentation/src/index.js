@@ -6,6 +6,7 @@ import toolbarModule from './toolbarModule.js';
 import getSopClassHandlerModule from './getOHIFDicomSegSopClassHandler.js';
 import SegmentationPanel from './components/SegmentationPanel/SegmentationPanel.js';
 import { version } from '../package.json';
+import commandsModule from './commandsModule.js';
 const { studyMetadataManager } = OHIF.utils;
 
 export default {
@@ -36,9 +37,9 @@ export default {
         const message =
           error.message.includes('orthogonal') ||
           error.message.includes('oblique')
-            ? 'The segmentation has been detected as not planar,\
-    If you really think it is planar,\
-    please adjust the tolerance in the segmentation panel settings (at your own peril!)'
+            ? 'The segmentation has been detected as non coplanar,\
+              If you really think it is coplanar,\
+              please adjust the tolerance in the segmentation panel settings (at your own peril!)'
             : error.message;
         LoggerService.error({ error, message });
         UINotificationService.show({
@@ -121,6 +122,15 @@ export default {
       });
     };
 
+    const onSegmentationsCompletelyLoaded = () => {
+      commandsManager.runCommand('jumpToFirstSegment');
+    };
+
+    document.addEventListener(
+      'segseriesselected',
+      onSegmentationsCompletelyLoaded
+    );
+
     document.addEventListener(
       'extensiondicomsegmentationsegloaded',
       onSegmentationsLoaded
@@ -181,6 +191,9 @@ export default {
       ],
       defaultContext: ['VIEWER'],
     };
+  },
+  getCommandsModule({ commandsManager, servicesManager }) {
+    return commandsModule({ commandsManager, servicesManager });
   },
   getSopClassHandlerModule,
 };
