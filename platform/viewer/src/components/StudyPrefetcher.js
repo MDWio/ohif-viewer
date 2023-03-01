@@ -49,8 +49,6 @@ const StudyPrefetcher = ({ studies, options }) => {
         );
         studyPrefetcher.prefetch(detail.element, displaySetInstanceUID);
       }
-
-      cornerstoneWADOImageLoader.webWorkerManager.terminate();
     };
 
     const onElementEnabled = ({ detail }) => {
