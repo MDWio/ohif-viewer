@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { classes, utils } from '@ohif/core';
-import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import PropTypes from 'prop-types';
 import cs from 'cornerstone-core';
 
