@@ -2,7 +2,7 @@
 # yarn lockfile v1
 
 
-"@alexandrborisovyg/cornerstone-wado-image-loader@4.10.0-fix-memory-issue":
+"@alexandrborisovyg/cornerstone-wado-image-loader@4.10.0-fix-memory-issue", "@alexandrborisovyg/cornerstone-wado-image-loader@^4.10.0-fix-memory-issue":
   version "4.10.0-fix-memory-issue"
   resolved "https://registry.yarnpkg.com/@alexandrborisovyg/cornerstone-wado-image-loader/-/cornerstone-wado-image-loader-4.10.0-fix-memory-issue.tgz#0eb035f0d0f5b380799a5a9cf222fe7d1a3e4862"
   integrity sha512-Vzz4LzWKgTDAOK2YLEpsriwCwHhv4D5pWXiEtIBdKk9Z1dJ79gORLDxC2/8LBmZXnqnxA/dB+vDpExqgO9cPyw==
