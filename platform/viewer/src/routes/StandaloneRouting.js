@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /* eslint-disable no-console */
 import React, { Component } from 'react';
 import OHIF from '@ohif/core';
@@ -31,43 +32,78 @@ class StandaloneRouting extends Component {
     return new Promise((resolve, reject) => {
       const url = query.url;
       const json = query.json;
+      const images = JSON.parse(query.images);
       const token = query.authToken;
 
-      if (!url) {
-        return reject(new Error('No URL was specified. Use ?url=$yourURL'));
-      }
-
-      if (url && json) {
+      if (Array.isArray(images) && json) {
         // Request is from OpenSearch Dashboards
         const data = JSON.parse(json);
         const metadataProvider = OHIF.cornerstone.metadataProvider;
 
-        let StudyInstanceUID;
-        let SeriesInstanceUID;
+        const arrayOfSOPInstanceUID = data.studies[0].series[0].instances[0].metadata.SOPInstanceUID.split(
+          ','
+        );
 
-        data.studies[0].series[0].instances[0].url = 'dicomweb:' + url;
+        const arrayOfSeriesInstanceUID = data.studies[0].series[0].instances[0].metadata.SeriesInstanceUID.split(
+          ','
+        );
 
-        for (const study of data.studies) {
-          StudyInstanceUID = study.StudyInstanceUID;
+        for (let i = 0; i < images.length; i++) {
+          let naturalizedDicom = structuredClone(
+            data.studies[0].series[0].instances[0].metadata
+          );
 
-          for (const series of study.series) {
-            SeriesInstanceUID = series.SeriesInstanceUID;
+          naturalizedDicom.SOPInstanceUID = arrayOfSOPInstanceUID[i];
+          naturalizedDicom.InstanceNumber = i + 1;
 
-            for (const instance of series.instances) {
-              const { metadata: naturalizedDicom } = instance;
+          if (i === 0) {
+            data.studies[0].series[0].instances[0].metadata.SOPInstanceUID =
+              arrayOfSOPInstanceUID[i];
+            data.studies[0].series[0].instances[0].metadata.SeriesInstanceUID =
+              arrayOfSeriesInstanceUID[i];
+            data.studies[0].series[0].instances[0].url += images[i];
+            data.studies[0].series[0].SeriesNumber = 1;
+          } else {
+            if (arrayOfSeriesInstanceUID[i] !== undefined) {
+              naturalizedDicom.SeriesInstanceUID = arrayOfSeriesInstanceUID[i];
 
-              metadataProvider.addInstance(naturalizedDicom);
-              metadataProvider.addImageIdToUIDs(url, {
-                StudyInstanceUID,
-                SeriesInstanceUID,
-                SOPInstanceUID: naturalizedDicom.SOPInstanceUID,
+              data.studies[0].series.push({
+                SeriesInstanceUID: arrayOfSeriesInstanceUID[i],
+                SeriesNumber: i + 1,
+                instances: [
+                  {
+                    metadata: naturalizedDicom,
+                    url: 'dicomweb:' + images[i],
+                  },
+                ],
+              });
+            } else {
+              naturalizedDicom.SeriesInstanceUID =
+                arrayOfSeriesInstanceUID[arrayOfSeriesInstanceUID.length - 1];
+
+              data.studies[0].series[
+                arrayOfSeriesInstanceUID.length - 1
+              ].instances.push({
+                metadata: naturalizedDicom,
+                url: 'dicomweb:' + images[i],
               });
             }
           }
+
+          const imageId = 'dicomweb:' + images[i];
+          metadataProvider.addImageIdToUIDs(imageId, {
+            StudyInstanceUID: naturalizedDicom.StudyInstanceUID,
+            SeriesInstanceUID: naturalizedDicom.SeriesInstanceUID,
+            SOPInstanceUID: arrayOfSOPInstanceUID[i],
+          });
         }
 
         resolve({ studies: data.studies, studyInstanceUIDs: [] });
       } else {
+        if (!url) {
+          return reject(new Error('No URL was specified. Use ?url=$yourURL'));
+        }
+
         // Define a request to the server to retrieve the study data
         // as JSON, given a URL that was in the Route
         const oReq = new XMLHttpRequest();
