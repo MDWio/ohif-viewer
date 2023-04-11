@@ -32,7 +32,10 @@ class StandaloneRouting extends Component {
     return new Promise((resolve, reject) => {
       const url = query.url;
       const json = query.json;
-      const images = JSON.parse(query.images);
+      let images;
+      if (query.images) {
+        images = JSON.parse(query.images);
+      }
       const token = query.authToken;
 
       if (Array.isArray(images) && json) {
