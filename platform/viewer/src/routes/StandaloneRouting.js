@@ -32,38 +32,28 @@ class StandaloneRouting extends Component {
     return new Promise((resolve, reject) => {
       const url = query.url;
       const json = query.json;
-      let images;
-      if (query.images) {
-        images = JSON.parse(query.images);
-      }
+      const images = query.images ? JSON.parse(query.images) : null;
       const token = query.authToken;
 
       if (Array.isArray(images) && json) {
-        // Request is from OpenSearch Dashboards
+        // The request is from OpenSearch Dashboards
         const data = JSON.parse(json);
         const metadataProvider = OHIF.cornerstone.metadataProvider;
 
-        const arrayOfSOPInstanceUID = data.studies[0].series[0].instances[0].metadata.SOPInstanceUID.split(
-          ','
-        );
+        const metadataJson = data.studies[0].series[0].instances[0].metadata;
 
-        const arrayOfSeriesInstanceUID = data.studies[0].series[0].instances[0].metadata.SeriesInstanceUID.split(
-          ','
-        );
+        const arrayOfSOPInstanceUID = metadataJson.SOPInstanceUID.split(',');
+        const arrayOfSeriesInstanceUID = metadataJson.SeriesInstanceUID.split(',');
 
         for (let i = 0; i < images.length; i++) {
-          let naturalizedDicom = structuredClone(
-            data.studies[0].series[0].instances[0].metadata
-          );
+          let naturalizedDicom = structuredClone(metadataJson);
 
           naturalizedDicom.SOPInstanceUID = arrayOfSOPInstanceUID[i];
           naturalizedDicom.InstanceNumber = i + 1;
 
           if (i === 0) {
-            data.studies[0].series[0].instances[0].metadata.SOPInstanceUID =
-              arrayOfSOPInstanceUID[i];
-            data.studies[0].series[0].instances[0].metadata.SeriesInstanceUID =
-              arrayOfSeriesInstanceUID[i];
+            metadataJson.SOPInstanceUID = arrayOfSOPInstanceUID[i];
+            metadataJson.SeriesInstanceUID = arrayOfSeriesInstanceUID[i];
             data.studies[0].series[0].instances[0].url += images[i];
             data.studies[0].series[0].SeriesNumber = 1;
           } else {
