@@ -40,58 +40,71 @@ class StandaloneRouting extends Component {
         const data = JSON.parse(json);
         const metadataProvider = OHIF.cornerstone.metadataProvider;
 
+        let study = structuredClone(data.studies[0]);
+        study.series = [];
+
         const metadataJson = data.studies[0].series[0].instances[0].metadata;
-
         const arrayOfSOPInstanceUID = metadataJson.SOPInstanceUID.split(',');
-        const arrayOfSeriesInstanceUID = metadataJson.SeriesInstanceUID.split(',');
+        const arrayOfSeriesInstanceUID = metadataJson.SeriesInstanceUID.split(
+          ','
+        );
 
+        const arrayOfImages = [];
         for (let i = 0; i < images.length; i++) {
-          let naturalizedDicom = structuredClone(metadataJson);
+          const series =
+            arrayOfSeriesInstanceUID[i] !== undefined
+              ? arrayOfSeriesInstanceUID[i]
+              : arrayOfSeriesInstanceUID[arrayOfSeriesInstanceUID.length - 1];
 
-          naturalizedDicom.SOPInstanceUID = arrayOfSOPInstanceUID[i];
-          naturalizedDicom.InstanceNumber = i + 1;
+          const sop =
+            arrayOfSOPInstanceUID[i] !== undefined
+              ? arrayOfSOPInstanceUID[i]
+              : arrayOfSOPInstanceUID[arrayOfSOPInstanceUID.length - 1] + i;
 
-          if (i === 0) {
-            metadataJson.SOPInstanceUID = arrayOfSOPInstanceUID[i];
-            metadataJson.SeriesInstanceUID = arrayOfSeriesInstanceUID[i];
-            data.studies[0].series[0].instances[0].url += images[i];
-            data.studies[0].series[0].SeriesNumber = 1;
-          } else {
-            if (arrayOfSeriesInstanceUID[i] !== undefined) {
-              naturalizedDicom.SeriesInstanceUID = arrayOfSeriesInstanceUID[i];
-
-              data.studies[0].series.push({
-                SeriesInstanceUID: arrayOfSeriesInstanceUID[i],
-                SeriesNumber: i + 1,
-                instances: [
-                  {
-                    metadata: naturalizedDicom,
-                    url: 'dicomweb:' + images[i],
-                  },
-                ],
-              });
-            } else {
-              naturalizedDicom.SeriesInstanceUID =
-                arrayOfSeriesInstanceUID[arrayOfSeriesInstanceUID.length - 1];
-
-              data.studies[0].series[
-                arrayOfSeriesInstanceUID.length - 1
-              ].instances.push({
-                metadata: naturalizedDicom,
-                url: 'dicomweb:' + images[i],
-              });
-            }
-          }
-
-          const imageId = 'dicomweb:' + images[i];
-          metadataProvider.addImageIdToUIDs(imageId, {
-            StudyInstanceUID: naturalizedDicom.StudyInstanceUID,
-            SeriesInstanceUID: naturalizedDicom.SeriesInstanceUID,
-            SOPInstanceUID: arrayOfSOPInstanceUID[i],
+          arrayOfImages.push({
+            url: images[i],
+            SeriesInstanceUID: series,
+            SOPInstanceUID: sop,
           });
         }
 
-        resolve({ studies: data.studies, studyInstanceUIDs: [] });
+        for (const image of arrayOfImages) {
+          let naturalizedDicom = structuredClone(metadataJson);
+          naturalizedDicom.SOPInstanceUID = image.SOPInstanceUID;
+          naturalizedDicom.SeriesInstanceUID = image.SeriesInstanceUID;
+
+          let series;
+          if (study.series !== undefined && study.series.length > 0) {
+            series = study.series.find(
+              series => series.SeriesInstanceUID === image.SeriesInstanceUID
+            );
+          }
+
+          const imageId = 'dicomweb:' + image.url;
+          const instance = {
+            metadata: naturalizedDicom,
+            url: imageId,
+          };
+
+          if (series) {
+            series.instances.push(instance);
+          } else {
+            study.series.push({
+              SeriesInstanceUID: image.SeriesInstanceUID,
+              SeriesNumber: study.series.length + 1,
+              Modality: naturalizedDicom.Modality,
+              instances: [instance],
+            });
+          }
+
+          metadataProvider.addImageIdToUIDs(imageId, {
+            StudyInstanceUID: naturalizedDicom.StudyInstanceUID,
+            SeriesInstanceUID: naturalizedDicom.SeriesInstanceUID,
+            SOPInstanceUID: naturalizedDicom.SOPInstanceUID,
+          });
+        }
+
+        resolve({ studies: [study], studyInstanceUIDs: [] });
       } else {
         if (!url) {
           return reject(new Error('No URL was specified. Use ?url=$yourURL'));
