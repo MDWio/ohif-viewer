@@ -36,17 +36,19 @@ const StudyPrefetcher = ({ studies, options }) => {
       studyPrefetcher.setStudies(studiesMetadata);
 
       const study = studyPrefetcher.getStudy(detail.image);
-      const series = studyPrefetcher.getSeries(study, detail.image);
-      const instance = studyPrefetcher.getInstance(series, detail.image);
+      if (study) {
+        const series = studyPrefetcher.getSeries(study, detail.image);
+        const instance = studyPrefetcher.getInstance(series, detail.image);
 
-      if (study.displaySets && study.displaySets.length > 0) {
-        const {
-          displaySetInstanceUID,
-        } = studyPrefetcher.getDisplaySetBySOPInstanceUID(
-          study.displaySets,
-          instance
-        );
-        studyPrefetcher.prefetch(detail.element, displaySetInstanceUID);
+        if (study.displaySets && study.displaySets.length > 0) {
+          const {
+            displaySetInstanceUID,
+          } = studyPrefetcher.getDisplaySetBySOPInstanceUID(
+            study.displaySets,
+            instance
+          );
+          studyPrefetcher.prefetch(detail.element, displaySetInstanceUID);
+        }
       }
     };
 
