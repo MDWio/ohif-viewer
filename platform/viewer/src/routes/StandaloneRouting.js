@@ -35,10 +35,11 @@ class StandaloneRouting extends Component {
       const images = query.images ? JSON.parse(query.images) : null;
       const token = query.authToken;
 
-      if (Array.isArray(images.data) && json) {
+      if (images && json) {
         // The request is from OpenSearch Dashboards
-        if (!images.data.length) {
-          return reject(new Error('Array of images must be non-empty'));
+
+        if (images.data && Array.isArray(images.data) && !images.data.length) {
+          return reject(new Error('images.data must be an array of objects'));
         }
 
         const data = JSON.parse(json);
