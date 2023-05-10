@@ -35,8 +35,12 @@ class StandaloneRouting extends Component {
       const images = query.images ? JSON.parse(query.images) : null;
       const token = query.authToken;
 
-      if (Array.isArray(images) && json) {
+      if (Array.isArray(images.data) && json) {
         // The request is from OpenSearch Dashboards
+        if (!images.data.length) {
+          return reject(new Error('Array of images must be non-empty'));
+        }
+
         const data = JSON.parse(json);
         const metadataProvider = OHIF.cornerstone.metadataProvider;
 
@@ -49,12 +53,20 @@ class StandaloneRouting extends Component {
           ','
         );
 
+        const imagesLink = images.data;
+
         const arrayOfImages = [];
-        for (let i = 0; i < images.length; i++) {
-          const series =
-            arrayOfSeriesInstanceUID[i] !== undefined
-              ? arrayOfSeriesInstanceUID[i]
-              : arrayOfSeriesInstanceUID[arrayOfSeriesInstanceUID.length - 1];
+        for (let i = 0; i < imagesLink.length; i++) {
+          let series;
+
+          if (imagesLink[i].seriesInstanceUID !== undefined) {
+            series = imagesLink[i].seriesInstanceUID;
+          } else {
+            series =
+              arrayOfSeriesInstanceUID[i] !== undefined
+                ? arrayOfSeriesInstanceUID[i]
+                : arrayOfSeriesInstanceUID[arrayOfSeriesInstanceUID.length - 1];
+          }
 
           const sop =
             arrayOfSOPInstanceUID[i] !== undefined
@@ -62,7 +74,7 @@ class StandaloneRouting extends Component {
               : arrayOfSOPInstanceUID[arrayOfSOPInstanceUID.length - 1] + i;
 
           arrayOfImages.push({
-            url: images[i],
+            url: imagesLink[i].url,
             SeriesInstanceUID: series,
             SOPInstanceUID: sop,
           });
