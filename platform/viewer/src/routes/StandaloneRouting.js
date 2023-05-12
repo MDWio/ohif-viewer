@@ -38,8 +38,12 @@ class StandaloneRouting extends Component {
       if (images && json) {
         // The request is from OpenSearch Dashboards
 
-        if (images.data && Array.isArray(images.data) && !images.data.length) {
-          return reject(new Error('images.data must be an array of objects'));
+        if (
+          !images.data ||
+          !Array.isArray(images.data) ||
+          !images.data.length
+        ) {
+          return reject(new Error('images.data must be an array'));
         }
 
         const data = JSON.parse(json);
@@ -54,32 +58,16 @@ class StandaloneRouting extends Component {
           ','
         );
 
-        const imagesLink = images.data;
-
-        const arrayOfImages = [];
-        for (let i = 0; i < imagesLink.length; i++) {
-          let series;
-
-          if (imagesLink[i].seriesInstanceUID !== undefined) {
-            series = imagesLink[i].seriesInstanceUID;
-          } else {
-            series =
-              arrayOfSeriesInstanceUID[i] !== undefined
-                ? arrayOfSeriesInstanceUID[i]
-                : arrayOfSeriesInstanceUID[arrayOfSeriesInstanceUID.length - 1];
-          }
-
-          const sop =
-            arrayOfSOPInstanceUID[i] !== undefined
-              ? arrayOfSOPInstanceUID[i]
-              : arrayOfSOPInstanceUID[arrayOfSOPInstanceUID.length - 1] + i;
-
-          arrayOfImages.push({
-            url: imagesLink[i].url,
-            SeriesInstanceUID: series,
-            SOPInstanceUID: sop,
-          });
-        }
+        const arrayOfImages = images.data.map((imageLink, i) => ({
+          url: imageLink.url,
+          SeriesInstanceUID:
+            imageLink.seriesInstanceUID ??
+            arrayOfSeriesInstanceUID[i] ??
+            arrayOfSeriesInstanceUID[arrayOfSeriesInstanceUID.length - 1],
+          SOPInstanceUID:
+            arrayOfSOPInstanceUID[i] ??
+            arrayOfSOPInstanceUID[arrayOfSOPInstanceUID.length - 1] + i,
+        }));
 
         for (const image of arrayOfImages) {
           let naturalizedDicom = structuredClone(metadataJson);
