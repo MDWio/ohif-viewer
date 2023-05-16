@@ -32,6 +32,7 @@ module.exports = {
         ['@babel/preset-env', { modules: false }],
         '@babel/preset-react',
       ],
+      plugins: ['@babel/plugin-proposal-nullish-coalescing-operator'],
       ignore: ['**/*.test.jsx', '**/*.test.js', '__snapshots__', '__tests__'],
     },
     development: {
