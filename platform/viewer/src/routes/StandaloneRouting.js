@@ -105,6 +105,17 @@ class StandaloneRouting extends Component {
         }
 
         resolve({ studies: [study], studyInstanceUIDs: [] });
+      } else if (json) {
+        const data = JSON.parse(json);
+
+        if (!data) {
+          return reject(new Error('No JSON data found'));
+        }
+
+        // Parse data here and add to metadata provider.
+        this.fillMetadata(data);
+
+        resolve({ studies: data.studies, studyInstanceUIDs: [] });
       } else {
         if (!url) {
           return reject(new Error('No URL was specified. Use ?url=$yourURL'));
@@ -136,31 +147,7 @@ class StandaloneRouting extends Component {
 
           const data = JSON.parse(oReq.responseText);
           // Parse data here and add to metadata provider.
-          const metadataProvider = OHIF.cornerstone.metadataProvider;
-
-          let StudyInstanceUID;
-          let SeriesInstanceUID;
-
-          for (const study of data.studies) {
-            StudyInstanceUID = study.StudyInstanceUID;
-
-            for (const series of study.series) {
-              SeriesInstanceUID = series.SeriesInstanceUID;
-
-              for (const instance of series.instances) {
-                const { url: imageId, metadata: naturalizedDicom } = instance;
-
-                // Add instance to metadata provider.
-                metadataProvider.addInstance(naturalizedDicom);
-                // Add imageId specific mapping to this data as the URL isn't necessarliy WADO-URI.
-                metadataProvider.addImageIdToUIDs(imageId, {
-                  StudyInstanceUID,
-                  SeriesInstanceUID,
-                  SOPInstanceUID: naturalizedDicom.SOPInstanceUID,
-                });
-              }
-            }
-          }
+          this.fillMetadata(data);
 
           resolve({ studies: data.studies, studyInstanceUIDs: [] });
         });
@@ -177,6 +164,36 @@ class StandaloneRouting extends Component {
         oReq.send();
       }
     });
+  }
+
+  fillMetadata(data) {
+    const metadataProvider = OHIF.cornerstone.metadataProvider;
+
+    let StudyInstanceUID;
+    let SeriesInstanceUID;
+
+    for (const study of data.studies) {
+      StudyInstanceUID = study.StudyInstanceUID;
+
+      for (const series of study.series) {
+        SeriesInstanceUID = series.SeriesInstanceUID;
+
+        for (const instance of series.instances) {
+          const { url: imageId, metadata: naturalizedDicom } = instance;
+
+          // Add instance to metadata provider.
+          metadataProvider.addInstance(naturalizedDicom);
+          // Add imageId specific mapping to this data as the URL isn't necessarliy WADO-URI.
+          metadataProvider.addImageIdToUIDs(imageId, {
+            StudyInstanceUID,
+            SeriesInstanceUID,
+            SOPInstanceUID: naturalizedDicom.SOPInstanceUID,
+          });
+        }
+      }
+    }
+
+    metadataProvider.setUrlJson(data);
   }
 
   async componentDidMount() {
