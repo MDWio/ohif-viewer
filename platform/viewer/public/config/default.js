@@ -16,6 +16,9 @@ window.config = {
   },
   servers: {},
   cornerstoneExtensionConfig: {},
+  arcAnalyticsExtensionConfig: {
+    serviceUrl: 'http://localhost:8000',
+  },
   // Following property limits number of simultaneous series metadata requests.
   // For http/1.x-only servers, set this to 5 or less to improve
   //  on first meaningful display in viewer

@@ -6,7 +6,7 @@ const definitions = [
   {
     id: 'ArcAnalytics',
     label: 'Arc Analytics',
-    icon: 'cog',
+    icon: 'brain',
     //
     type: TOOLBAR_BUTTON_TYPES.COMMAND,
     commandName: 'openDICOMArcAnalytics',

@@ -6,17 +6,12 @@ import { cornerstone as OHIFCornerstone } from '@ohif/core';
 import './DicomArcAnalytics.css';
 import OHIF from '@ohif/core';
 import LoadingIndicator from './LoadingIndicator';
+import ErrorMessage from './ErrorMessage';
 import ServiceSelect from './ServiceSelect';
 import ServiceSelectItem from './ServiceSelectItem';
 
 const { log } = OHIF;
 const { metadataProvider } = OHIFCornerstone;
-const url = 'http://localhost:8000'; // TODO: Move to config
-const api = {
-  auth: '/api/auth',
-  servicesList: '/api/services/list',
-  servicesSend: '/api/services/send',
-};
 
 const DicomArcAnalytics = ({ displaySets }) => {
   const [state, setState] = useState({
@@ -27,13 +22,34 @@ const DicomArcAnalytics = ({ displaySets }) => {
     isLoading: false,
     services: [],
     selectedService: null,
+    config: null,
   });
+
+  let url = 'http://localhost:8000';
+  const urlJson = metadataProvider.getUrlJson();
+  const api = {
+    auth: '/api/auth',
+    servicesList: '/api/services/list',
+    servicesSend: '/api/services/send',
+  };
 
   const save = (field, value) => {
     setState(state => ({ ...state, [field]: value }));
   };
 
   useEffect(() => {
+    if (!urlJson.studies) {
+      return;
+    }
+
+    if (
+      window.config.arcAnalyticsExtensionConfig &&
+      window.config.arcAnalyticsExtensionConfig.serviceUrl
+    ) {
+      save('config', window.config.arcAnalyticsExtensionConfig);
+      url = window.config.arcAnalyticsExtensionConfig.serviceUrl;
+    }
+
     if (localStorage.getItem('token')) {
       try {
         save('token', localStorage.getItem('token'));
@@ -69,7 +85,7 @@ const DicomArcAnalytics = ({ displaySets }) => {
     };
 
     xhr.onerror = function(response) {
-      save('error', response.target.responseText);
+      save('error', `Connection error: ${response.target.responseText}`);
       save('isLoading', false);
     };
 
@@ -116,7 +132,7 @@ const DicomArcAnalytics = ({ displaySets }) => {
     };
 
     xhr.onerror = function(response) {
-      save('error', response.target.responseText);
+      save('error', `Connection error: ${response.target.responseText}`);
       save('isLoading', false);
     };
 
@@ -132,7 +148,7 @@ const DicomArcAnalytics = ({ displaySets }) => {
     }
 
     xhr.onerror = function(response) {
-      save('error', response.target.responseText);
+      save('error', `Connection error: ${response.target.responseText}`);
       save('isLoading', false);
     };
 
@@ -156,7 +172,6 @@ const DicomArcAnalytics = ({ displaySets }) => {
       save('isLoading', false);
     };
 
-    const urlJson = getUrlJson();
     if (!urlJson) {
       save('error', 'No urlJson');
       return;
@@ -218,13 +233,8 @@ const DicomArcAnalytics = ({ displaySets }) => {
     service => service.value === state.selectedService
   );
 
-  function getUrlJson() {
-    const urlJson = metadataProvider.getUrlJson();
-
-    return urlJson;
-  }
-
   return (
+    (!urlJson.studies && <ErrorMessage message="No json is provided" />) ||
     (state.isLoading && (
       <LoadingIndicator expand height="70px" width="70px" />
     )) ||
@@ -235,7 +245,7 @@ const DicomArcAnalytics = ({ displaySets }) => {
           <input
             type="text"
             name="login"
-            className="form-control"
+            className="form-control control-margin"
             onChange={event => save('login', event.target.value)}
             value={state.login}
           ></input>
@@ -243,18 +253,18 @@ const DicomArcAnalytics = ({ displaySets }) => {
           <input
             type="password"
             name="password"
-            className="form-control"
+            className="form-control control-margin"
             onChange={event => save('password', event.target.value)}
             value={state.password}
           ></input>
+          {state.error && <ErrorMessage message={state.error} />}
+          <button
+            className="btn btn-primary control-margin"
+            onClick={authenticateApi}
+          >
+            Authenticate
+          </button>
         </form>
-        <button
-          className="btn btn-primary btn-header"
-          onClick={authenticateApi}
-        >
-          Authenticate
-        </button>
-        {state.error && <div>{state.error}</div>}
       </div>
     )) || (
       <div className="wrap-select">
@@ -269,12 +279,12 @@ const DicomArcAnalytics = ({ displaySets }) => {
             Log Out
           </button>
         </div>
-        {state.error && <div>{state.error}</div>}
         <ServiceSelect
           value={selectedServiceValue}
           formatOptionLabel={ServiceSelectItem}
           options={state.services}
         />
+        {state.error && <ErrorMessage message={state.error} />}
         <button
           className="btn btn-primary btn-footer"
           onClick={sendToServiceApi}
