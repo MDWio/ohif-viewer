@@ -35,8 +35,17 @@ class StandaloneRouting extends Component {
       const images = query.images ? JSON.parse(query.images) : null;
       const token = query.authToken;
 
-      if (Array.isArray(images) && json) {
+      if (images && json) {
         // The request is from OpenSearch Dashboards
+
+        if (
+          !images.data ||
+          !Array.isArray(images.data) ||
+          !images.data.length
+        ) {
+          return reject(new Error('images.data must be an array'));
+        }
+
         const data = JSON.parse(json);
         const metadataProvider = OHIF.cornerstone.metadataProvider;
 
@@ -49,24 +58,16 @@ class StandaloneRouting extends Component {
           ','
         );
 
-        const arrayOfImages = [];
-        for (let i = 0; i < images.length; i++) {
-          const series =
-            arrayOfSeriesInstanceUID[i] !== undefined
-              ? arrayOfSeriesInstanceUID[i]
-              : arrayOfSeriesInstanceUID[arrayOfSeriesInstanceUID.length - 1];
-
-          const sop =
-            arrayOfSOPInstanceUID[i] !== undefined
-              ? arrayOfSOPInstanceUID[i]
-              : arrayOfSOPInstanceUID[arrayOfSOPInstanceUID.length - 1] + i;
-
-          arrayOfImages.push({
-            url: images[i],
-            SeriesInstanceUID: series,
-            SOPInstanceUID: sop,
-          });
-        }
+        const arrayOfImages = images.data.map((imageLink, i) => ({
+          url: imageLink.url,
+          SeriesInstanceUID:
+            imageLink.seriesInstanceUID ??
+            arrayOfSeriesInstanceUID[i] ??
+            arrayOfSeriesInstanceUID[arrayOfSeriesInstanceUID.length - 1],
+          SOPInstanceUID:
+            arrayOfSOPInstanceUID[i] ??
+            arrayOfSOPInstanceUID[arrayOfSOPInstanceUID.length - 1] + i,
+        }));
 
         for (const image of arrayOfImages) {
           let naturalizedDicom = structuredClone(metadataJson);

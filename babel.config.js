@@ -23,6 +23,7 @@ module.exports = {
         '@babel/plugin-syntax-dynamic-import',
         '@babel/plugin-transform-regenerator',
         '@babel/plugin-transform-runtime',
+        '@babel/plugin-proposal-nullish-coalescing-operator',
       ],
     },
     production: {
@@ -31,6 +32,7 @@ module.exports = {
         ['@babel/preset-env', { modules: false }],
         '@babel/preset-react',
       ],
+      plugins: ['@babel/plugin-proposal-nullish-coalescing-operator'],
       ignore: ['**/*.test.jsx', '**/*.test.js', '__snapshots__', '__tests__'],
     },
     development: {
@@ -39,7 +41,10 @@ module.exports = {
         ['@babel/preset-env', { modules: false }],
         '@babel/preset-react',
       ],
-      plugins: ['react-hot-loader/babel'],
+      plugins: [
+        'react-hot-loader/babel',
+        '@babel/plugin-proposal-nullish-coalescing-operator',
+      ],
       ignore: ['**/*.test.jsx', '**/*.test.js', '__snapshots__', '__tests__'],
     },
   },
