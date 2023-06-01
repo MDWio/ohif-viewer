@@ -22,6 +22,7 @@ class MetadataProvider {
       value: new Map(),
     });
     this.datasets = {};
+    this.urlJson = {};
   }
 
   async addInstance(dicomJSONDatasetOrP10ArrayBuffer, options = {}) {
@@ -82,6 +83,14 @@ class MetadataProvider {
 
   getStudyDataset(StudyInstanceUID) {
     return this.datasets[StudyInstanceUID];
+  }
+
+  setUrlJson(json) {
+    this.urlJson = json;
+  }
+
+  getUrlJson() {
+    return this.urlJson;
   }
 
   _getAndCacheStudy(StudyInstanceUID) {
