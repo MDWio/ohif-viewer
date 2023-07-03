@@ -1,5 +1,5 @@
 import cornerstone from 'cornerstone-core';
-import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
+import cornerstoneWADOImageLoader from '@alexandrborisovyg/cornerstone-wado-image-loader';
 import debounce from 'lodash.debounce';
 
 import StackManager from '../utils/StackManager';
