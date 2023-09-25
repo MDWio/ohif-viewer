@@ -142,7 +142,7 @@ function getMainData(data) {
   // Main Header - Report
   const datetime = formatDate(
     parseDateTimeFromDicomTag(data.ContentDate, data.ContentTime),
-    true,
+    false,
     'MM/DD/YYYY HH:mm:ss'
   );
   const reportDate = `By on, ${datetime}`;
@@ -219,7 +219,7 @@ function getMainData(data) {
 
   const studyDateTime = formatDate(
     parseDateTimeFromDicomTag(data.StudyDate, data.StudyTime),
-    true,
+    false,
     'MM/DD/YYYY HH:mm:ss'
   );
   root.push(
