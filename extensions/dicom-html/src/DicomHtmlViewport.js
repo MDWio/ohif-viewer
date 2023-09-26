@@ -145,7 +145,9 @@ function getMainData(data) {
     false,
     'MM/DD/YYYY HH:mm:ss'
   );
-  const reportDate = `By on, ${datetime}`;
+  const reportDate = data.InstitutionName
+    ? `By ${data.InstitutionName} on ${datetime}`
+    : `On ${datetime}`;
   root.push(
     <>
       <h2 className="secondary-color" key="report">
