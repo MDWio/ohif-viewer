@@ -198,7 +198,7 @@ function getMainData(data) {
 
   const patientBirthDate = formatDate(
     parseDateFromDicomTag(data.PatientBirthDate),
-    true,
+    false,
     'MM/DD/YYYY'
   );
   root.push(
