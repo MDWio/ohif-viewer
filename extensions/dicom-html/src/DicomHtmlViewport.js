@@ -142,10 +142,12 @@ function getMainData(data) {
   // Main Header - Report
   const datetime = formatDate(
     parseDateTimeFromDicomTag(data.ContentDate, data.ContentTime),
-    true,
+    false,
     'MM/DD/YYYY HH:mm:ss'
   );
-  const reportDate = `By on, ${datetime}`;
+  const reportDate = data.InstitutionName
+    ? `By ${data.InstitutionName} on ${datetime}`
+    : `On ${datetime}`;
   root.push(
     <>
       <h2 className="secondary-color" key="report">
@@ -196,7 +198,7 @@ function getMainData(data) {
 
   const patientBirthDate = formatDate(
     parseDateFromDicomTag(data.PatientBirthDate),
-    true,
+    false,
     'MM/DD/YYYY'
   );
   root.push(
@@ -219,7 +221,7 @@ function getMainData(data) {
 
   const studyDateTime = formatDate(
     parseDateTimeFromDicomTag(data.StudyDate, data.StudyTime),
-    true,
+    false,
     'MM/DD/YYYY HH:mm:ss'
   );
   root.push(

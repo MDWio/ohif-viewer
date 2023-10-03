@@ -18,7 +18,7 @@ export function parseDateFromDicomTag(dateString) {
 
 export function formatDate(date, isUtc = false, outputFormat = 'MM/DD/YYYY') {
   if (!moment(date).isValid()) {
-    return '-';
+    return '';
   }
   if (isUtc) {
     return moment.utc(date).format(outputFormat);
@@ -28,6 +28,10 @@ export function formatDate(date, isUtc = false, outputFormat = 'MM/DD/YYYY') {
 }
 
 export function parseDate(dateString, format = 'YYYY-MM-DD', utc = false) {
+  if (!dateString) {
+    return '';
+  }
+
   const momentDate = utc
     ? moment.utc(dateString, format)
     : moment(dateString, format);
