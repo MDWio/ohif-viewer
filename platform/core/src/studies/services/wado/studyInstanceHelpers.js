@@ -1,7 +1,7 @@
 import DICOMWeb from '../../../DICOMWeb';
 import metadataProvider from '../../../classes/MetadataProvider';
 import getWADORSImageId from '../../../utils/getWADORSImageId';
-import cornerstoneWADOImageLoader from '@alexandrborisovyg/cornerstone-wado-image-loader';
+import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import getReferencedSeriesSequence from './getReferencedSeriesSequence';
 
 /**

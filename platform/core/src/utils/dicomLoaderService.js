@@ -1,5 +1,5 @@
 import cornerstone from 'cornerstone-core';
-import cornerstoneWADOImageLoader from '@alexandrborisovyg/cornerstone-wado-image-loader';
+import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import { api } from 'dicomweb-client';
 import DICOMWeb from '../DICOMWeb';
 

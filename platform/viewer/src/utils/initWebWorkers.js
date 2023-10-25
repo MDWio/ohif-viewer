@@ -1,4 +1,4 @@
-import cornerstoneWADOImageLoader from '@alexandrborisovyg/cornerstone-wado-image-loader';
+import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 
 let initialized = false;
 
