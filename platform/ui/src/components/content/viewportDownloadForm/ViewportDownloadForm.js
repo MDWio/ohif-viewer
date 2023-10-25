@@ -36,6 +36,8 @@ const ViewportDownloadForm = ({
   loadImage,
   downloadBlob,
   defaultSize,
+  columns,
+  rows,
   minimumSize,
   maximumSize,
   canvasClass,
@@ -46,8 +48,8 @@ const ViewportDownloadForm = ({
   const [fileType, setFileType] = useState('jpg');
 
   const [dimensions, setDimensions] = useState({
-    width: defaultSize,
-    height: defaultSize,
+    width: columns || defaultSize,
+    height: rows || defaultSize,
   });
 
   const [showAnnotations, setShowAnnotations] = useState(true);
@@ -60,20 +62,20 @@ const ViewportDownloadForm = ({
 
   const [viewportElement, setViewportElement] = useState();
   const [viewportElementDimensions, setViewportElementDimensions] = useState({
-    width: defaultSize,
-    height: defaultSize,
+    width: columns || defaultSize,
+    height: rows || defaultSize,
   });
 
   const [downloadCanvas, setDownloadCanvas] = useState({
     ref: createRef(),
-    width: defaultSize,
-    height: defaultSize,
+    width: columns || defaultSize,
+    height: rows || defaultSize,
   });
 
   const [viewportPreview, setViewportPreview] = useState({
     src: null,
-    width: defaultSize,
-    height: defaultSize,
+    width: columns || defaultSize,
+    height: rows || defaultSize,
   });
 
   const [error, setError] = useState({
@@ -423,6 +425,8 @@ ViewportDownloadForm.propTypes = {
   downloadBlob: PropTypes.func.isRequired,
   /** A default width & height, between the minimum and maximum size */
   defaultSize: PropTypes.number.isRequired,
+  columns: PropTypes.number,
+  rows: PropTypes.number,
   minimumSize: PropTypes.number.isRequired,
   maximumSize: PropTypes.number.isRequired,
   canvasClass: PropTypes.string.isRequired,
