@@ -14,10 +14,6 @@ import classnames from 'classnames';
 
 const FILE_TYPE_OPTIONS = [
   {
-    key: 'jpg',
-    value: 'jpg',
-  },
-  {
     key: 'png',
     value: 'png',
   },
