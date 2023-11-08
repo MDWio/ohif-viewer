@@ -41,7 +41,7 @@ const ViewportDownloadForm = ({
   const [t] = useTranslation('ViewportDownloadForm');
 
   const [filename, setFilename] = useState(DEFAULT_FILENAME);
-  const [fileType, setFileType] = useState('jpg');
+  const [fileType, setFileType] = useState('png');
 
   const [dimensions, setDimensions] = useState({
     width: columns || defaultSize,
