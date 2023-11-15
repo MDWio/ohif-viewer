@@ -23,6 +23,8 @@ class MetadataProvider {
     });
     this.datasets = {};
     this.urlJson = {};
+    this.currentRows = undefined;
+    this.currentColumns = undefined;
   }
 
   async addInstance(dicomJSONDatasetOrP10ArrayBuffer, options = {}) {
@@ -91,6 +93,22 @@ class MetadataProvider {
 
   getUrlJson() {
     return this.urlJson;
+  }
+
+  setRows(rows) {
+    this.currentRows = rows;
+  }
+
+  getRows() {
+    return this.currentRows;
+  }
+
+  setColumns(columns) {
+    this.currentColumns = columns;
+  }
+
+  getColumns() {
+    return this.currentColumns;
   }
 
   _getAndCacheStudy(StudyInstanceUID) {

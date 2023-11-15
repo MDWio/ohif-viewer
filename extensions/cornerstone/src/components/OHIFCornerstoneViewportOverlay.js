@@ -3,6 +3,7 @@ import React from 'react';
 import styled from 'styled-components';
 import PropTypes from 'prop-types';
 import cornerstone from 'cornerstone-core';
+import OHIF from '@ohif/core';
 import './OHIFCornerstoneViewportOverlay.css';
 import {
   isValidNumber,
@@ -92,6 +93,8 @@ class OHIFCornerstoneViewportOverlay extends PureComponent {
       windowWidth.toFixed ? windowWidth.toFixed(0) : windowWidth
     } L: ${windowWidth.toFixed ? windowCenter.toFixed(0) : windowCenter}`;
     const imageDimensions = `${columns} x ${rows}`;
+
+    setColumnsAndRowsToMetadata(columns, rows);
 
     const { imageIndex, stackSize } = this.props;
 
@@ -262,6 +265,13 @@ class OHIFCornerstoneViewportOverlay extends PureComponent {
 
     return <div className="OHIFCornerstoneViewportOverlay">{normal}</div>;
   }
+}
+
+function setColumnsAndRowsToMetadata(columns, rows) {
+  const metadataProvider = OHIF.cornerstone.metadataProvider;
+
+  metadataProvider.setRows(rows);
+  metadataProvider.setColumns(columns);
 }
 
 export default OHIFCornerstoneViewportOverlay;

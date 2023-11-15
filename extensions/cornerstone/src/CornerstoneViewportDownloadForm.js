@@ -12,7 +12,12 @@ const MINIMUM_SIZE = 100;
 const DEFAULT_SIZE = 512;
 const MAX_TEXTURE_SIZE = 10000;
 
-const CornerstoneViewportDownloadForm = ({ onClose, activeViewportIndex }) => {
+const CornerstoneViewportDownloadForm = ({
+  onClose,
+  activeViewportIndex,
+  columns,
+  rows,
+}) => {
   const activeEnabledElement = getEnabledElement(activeViewportIndex);
 
   const enableViewport = viewportElement => {
@@ -39,8 +44,8 @@ const CornerstoneViewportDownloadForm = ({ onClose, activeViewportIndex }) => {
           const type = 'image/' + fileType;
           const dataUrl = downloadCanvas.toDataURL(type, 1);
 
-          let newWidth = enabledElement.offsetHeight;
-          let newHeight = enabledElement.offsetWidth;
+          let newWidth = rows || enabledElement.offsetHeight;
+          let newHeight = columns || enabledElement.offsetWidth;
 
           if (newWidth > DEFAULT_SIZE || newHeight > DEFAULT_SIZE) {
             const multiplier = DEFAULT_SIZE / Math.max(newWidth, newHeight);
@@ -128,6 +133,8 @@ const CornerstoneViewportDownloadForm = ({ onClose, activeViewportIndex }) => {
       minimumSize={MINIMUM_SIZE}
       maximumSize={MAX_TEXTURE_SIZE}
       defaultSize={DEFAULT_SIZE}
+      columns={columns}
+      rows={rows}
       canvasClass={'cornerstone-canvas'}
       activeViewport={activeEnabledElement}
       enableViewport={enableViewport}
@@ -143,6 +150,8 @@ const CornerstoneViewportDownloadForm = ({ onClose, activeViewportIndex }) => {
 CornerstoneViewportDownloadForm.propTypes = {
   onClose: PropTypes.func,
   activeViewportIndex: PropTypes.number.isRequired,
+  rows: PropTypes.number,
+  columns: PropTypes.number,
 };
 
 export default CornerstoneViewportDownloadForm;

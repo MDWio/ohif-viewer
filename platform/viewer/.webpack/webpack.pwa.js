@@ -61,7 +61,7 @@ module.exports = (env, argv) => {
       // (Note: script-tag version of the viewer will no longer be supported in OHIF v3)
       alias: {
         'cornerstone-wado-image-loader':
-          '@alexandrborisovyg/cornerstone-wado-image-loader/dist/dynamic-import/cornerstoneWADOImageLoader.min.js',
+          'cornerstone-wado-image-loader/dist/dynamic-import/cornerstoneWADOImageLoader.min.js',
       },
     },
     module: {
@@ -95,7 +95,7 @@ module.exports = (env, argv) => {
         },
         {
           from:
-            '../../../node_modules/@alexandrborisovyg/cornerstone-wado-image-loader/dist/dynamic-import',
+            '../../../node_modules/cornerstone-wado-image-loader/dist/dynamic-import',
           to: DIST_DIR,
         },
       ]),

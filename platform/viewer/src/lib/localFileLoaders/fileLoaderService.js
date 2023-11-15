@@ -1,4 +1,4 @@
-import cornerstoneWADOImageLoader from '@alexandrborisovyg/cornerstone-wado-image-loader';
+import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import FileLoader from './fileLoader';
 import PDFFileLoader from './pdfFileLoader';
 import DICOMFileLoader from './dicomFileLoader';
