@@ -23,12 +23,19 @@
     justify-content: space-around;
     margin: 20px 0;
     border-radius: 5px;
-    padding: 20px 10px;
+    padding: 20px 10px 0px;
     background-color: var(--ui-gray-dark);
 
     @media screen and (max-width: 1023px)
       flex-direction: column;
       align-items: flex-start;
+
+    .file-name
+      margin-left: -4px;
+
+    .file-type-value
+      display: inline-block;
+      margin-left: 40px;
 
     .width,
     .height,

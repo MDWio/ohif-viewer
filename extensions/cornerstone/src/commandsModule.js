@@ -10,6 +10,8 @@ const scroll = cornerstoneTools.import('util/scroll');
 const { studyMetadataManager } = OHIF.utils;
 const { setViewportSpecificData } = OHIF.redux.actions;
 
+const metadataProvider = OHIF.cornerstone.metadataProvider;
+
 const refreshCornerstoneViewports = () => {
   cornerstone.getEnabledElements().forEach(enabledElement => {
     if (enabledElement.image) {
@@ -154,6 +156,8 @@ const commandsModule = ({ servicesManager }) => {
       return enabledElement;
     },
     showDownloadViewportModal: ({ title, viewports }) => {
+      const metadataColumns = metadataProvider.getColumns();
+      const metadataRows = metadataProvider.getRows();
       const activeViewportIndex = viewports.activeViewportIndex;
       const { UIModalService } = servicesManager.services;
       if (UIModalService) {
@@ -163,6 +167,8 @@ const commandsModule = ({ servicesManager }) => {
           contentProps: {
             activeViewportIndex,
             onClose: UIModalService.hide,
+            columns: metadataColumns,
+            rows: metadataRows,
           },
         });
       }
