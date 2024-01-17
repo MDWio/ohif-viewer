@@ -53,6 +53,7 @@ class StandaloneRouting extends Component {
         study.series = [];
 
         const metadataJson = data.studies[0].series[0].instances[0].metadata;
+        const instanceNumbers = metadataJson.InstanceNumber;
         const arrayOfSOPInstanceUID = metadataJson.SOPInstanceUID.split(',');
         const arrayOfSeriesInstanceUID = metadataJson.SeriesInstanceUID.split(
           ','
@@ -69,7 +70,7 @@ class StandaloneRouting extends Component {
             arrayOfSOPInstanceUID[arrayOfSOPInstanceUID.length - 1] + i,
         }));
 
-        for (const image of arrayOfImages) {
+        for (const [index, image] of arrayOfImages.entries()) {
           let naturalizedDicom = structuredClone(metadataJson);
           naturalizedDicom.SOPInstanceUID = image.SOPInstanceUID;
           naturalizedDicom.SeriesInstanceUID = image.SeriesInstanceUID;
@@ -81,6 +82,9 @@ class StandaloneRouting extends Component {
             );
           }
 
+          if (instanceNumbers[index]) {
+            naturalizedDicom.InstanceNumber = Number(instanceNumbers[index]);
+          }
           const imageId = 'dicomweb:' + image.url;
           const instance = {
             metadata: naturalizedDicom,
