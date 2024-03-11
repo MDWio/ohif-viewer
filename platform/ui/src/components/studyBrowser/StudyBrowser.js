@@ -102,6 +102,7 @@ StudyBrowser.propTypes = {
   onThumbnailClick: PropTypes.func,
   onThumbnailDoubleClick: PropTypes.func,
   showThumbnailProgressBar: PropTypes.bool,
+  viewportIndex: PropTypes.number,
 };
 
 StudyBrowser.defaultProps = {

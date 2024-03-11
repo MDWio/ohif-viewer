@@ -2,7 +2,12 @@ import { connect } from 'react-redux';
 import Viewer from './Viewer.js';
 import OHIF from '@ohif/core';
 
-const { setTimepoints, setMeasurements } = OHIF.redux.actions;
+const {
+  setTimepoints,
+  setMeasurements,
+  setLayout,
+  setViewportActive,
+} = OHIF.redux.actions;
 
 const getActiveServer = servers => {
   const isActive = a => a.active === true;
@@ -20,6 +25,32 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => {
   return {
+    setLayout: (numRows, numColumns, currentViewports) => {
+      const viewports = [];
+      const numViewports = numRows * numColumns;
+
+      for (let i = 0; i < numViewports; i++) {
+        // Hacky way to allow users to exit MPR "mode"
+        const viewport = currentViewports[i];
+        let plugin = viewport && viewport.plugin;
+        if (viewport && viewport.vtk) {
+          plugin = 'cornerstone';
+        }
+
+        viewports.push({
+          plugin,
+        });
+      }
+      const layout = {
+        numRows,
+        numColumns,
+        viewports,
+      };
+
+      dispatch(setViewportActive(0));
+
+      dispatch(setLayout(layout));
+    },
     onTimepointsUpdated: timepoints => {
       dispatch(setTimepoints(timepoints));
     },

@@ -20,6 +20,7 @@ class StandaloneRouting extends Component {
     seriesInstanceUIDs: null,
     error: null,
     loading: true,
+    isDualMod: false,
   };
 
   static propTypes = {
@@ -37,79 +38,100 @@ class StandaloneRouting extends Component {
 
       if (images && json) {
         // The request is from OpenSearch Dashboards
+        const studiesData = JSON.parse(json);
+        const studies = [];
+        const isDualMod = query.isDualMod; // Now sent only from OpenSearch Dashboards
 
-        if (
-          !images.data ||
-          !Array.isArray(images.data) ||
-          !images.data.length
-        ) {
-          return reject(new Error('images.data must be an array'));
+        if (!Array.isArray(images) || !Array.isArray(studiesData)) {
+          return reject(new Error('images and json must be an array'));
         }
 
-        const data = JSON.parse(json);
-        const metadataProvider = OHIF.cornerstone.metadataProvider;
+        if (images.length !== studiesData.length) {
+          return reject(
+            new Error('images and json must have the same elements count')
+          );
+        }
 
-        let study = structuredClone(data.studies[0]);
-        study.series = [];
-
-        const metadataJson = data.studies[0].series[0].instances[0].metadata;
-        const instanceNumbers = metadataJson.InstanceNumber;
-        const arrayOfSOPInstanceUID = metadataJson.SOPInstanceUID.split(',');
-        const arrayOfSeriesInstanceUID = metadataJson.SeriesInstanceUID.split(
-          ','
-        );
-
-        const arrayOfImages = images.data.map((imageLink, i) => ({
-          url: imageLink.url,
-          SeriesInstanceUID:
-            imageLink.seriesInstanceUID ??
-            arrayOfSeriesInstanceUID[i] ??
-            arrayOfSeriesInstanceUID[arrayOfSeriesInstanceUID.length - 1],
-          SOPInstanceUID:
-            arrayOfSOPInstanceUID[i] ??
-            arrayOfSOPInstanceUID[arrayOfSOPInstanceUID.length - 1] + i,
-        }));
-
-        for (const [index, image] of arrayOfImages.entries()) {
-          let naturalizedDicom = structuredClone(metadataJson);
-          naturalizedDicom.SOPInstanceUID = image.SOPInstanceUID;
-          naturalizedDicom.SeriesInstanceUID = image.SeriesInstanceUID;
-
-          let series;
-          if (study.series !== undefined && study.series.length > 0) {
-            series = study.series.find(
-              series => series.SeriesInstanceUID === image.SeriesInstanceUID
-            );
+        for (const [index, data] of studiesData.entries()) {
+          const imagesForStudy = images[index];
+          if (
+            !imagesForStudy.data ||
+            !Array.isArray(imagesForStudy.data) ||
+            !imagesForStudy.data.length
+          ) {
+            return reject(new Error('images.data for study must be an array'));
           }
 
-          if (instanceNumbers[index]) {
-            naturalizedDicom.InstanceNumber = Number(instanceNumbers[index]);
-          }
-          const imageId = 'dicomweb:' + image.url;
-          const instance = {
-            metadata: naturalizedDicom,
-            url: imageId,
-          };
+          const metadataProvider = OHIF.cornerstone.metadataProvider;
 
-          if (series) {
-            series.instances.push(instance);
-          } else {
-            study.series.push({
-              SeriesInstanceUID: image.SeriesInstanceUID,
-              SeriesNumber: study.series.length + 1,
-              Modality: naturalizedDicom.Modality,
-              instances: [instance],
+          let study = structuredClone(data.studies[0]);
+          study.series = [];
+
+          const metadataJson = data.studies[0].series[0].instances[0].metadata;
+          const instanceNumbers = metadataJson.InstanceNumber;
+          const arrayOfSOPInstanceUID = metadataJson.SOPInstanceUID.split(',');
+          const arrayOfSeriesInstanceUID = metadataJson.SeriesInstanceUID.split(
+            ','
+          );
+
+          const arrayOfImages = imagesForStudy.data.map((imageLink, i) => ({
+            url: imageLink.url,
+            SeriesInstanceUID:
+              imageLink.seriesInstanceUID ??
+              arrayOfSeriesInstanceUID[i] ??
+              arrayOfSeriesInstanceUID[arrayOfSeriesInstanceUID.length - 1],
+            SOPInstanceUID:
+              arrayOfSOPInstanceUID[i] ??
+              arrayOfSOPInstanceUID[arrayOfSOPInstanceUID.length - 1] + i,
+          }));
+
+          for (const [index, image] of arrayOfImages.entries()) {
+            let naturalizedDicom = structuredClone(metadataJson);
+            naturalizedDicom.SOPInstanceUID = image.SOPInstanceUID;
+            naturalizedDicom.SeriesInstanceUID = image.SeriesInstanceUID;
+
+            let series;
+            if (study.series !== undefined && study.series.length > 0) {
+              series = study.series.find(
+                series => series.SeriesInstanceUID === image.SeriesInstanceUID
+              );
+            }
+
+            if (instanceNumbers[index]) {
+              naturalizedDicom.InstanceNumber = Number(instanceNumbers[index]);
+            }
+            const imageId = 'dicomweb:' + image.url;
+            const instance = {
+              metadata: naturalizedDicom,
+              url: imageId,
+            };
+
+            if (series) {
+              series.instances.push(instance);
+            } else {
+              study.series.push({
+                SeriesInstanceUID: image.SeriesInstanceUID,
+                SeriesNumber: study.series.length + 1,
+                Modality: naturalizedDicom.Modality,
+                instances: [instance],
+              });
+            }
+
+            metadataProvider.addImageIdToUIDs(imageId, {
+              StudyInstanceUID: naturalizedDicom.StudyInstanceUID,
+              SeriesInstanceUID: naturalizedDicom.SeriesInstanceUID,
+              SOPInstanceUID: naturalizedDicom.SOPInstanceUID,
             });
           }
 
-          metadataProvider.addImageIdToUIDs(imageId, {
-            StudyInstanceUID: naturalizedDicom.StudyInstanceUID,
-            SeriesInstanceUID: naturalizedDicom.SeriesInstanceUID,
-            SOPInstanceUID: naturalizedDicom.SOPInstanceUID,
-          });
+          studies.push(study);
         }
 
-        resolve({ studies: [study], studyInstanceUIDs: [] });
+        if (studies.length === 0) {
+          return reject(new Error('No studies found'));
+        }
+
+        resolve({ studies, studyInstanceUIDs: [], isDualMod });
       } else if (json) {
         const data = JSON.parse(json);
 
@@ -213,6 +235,7 @@ class StandaloneRouting extends Component {
         studies,
         studyInstanceUIDs,
         seriesInstanceUIDs,
+        isDualMod,
       } = await this.parseQueryAndRetrieveDICOMWebData(query);
 
       if (studies) {
@@ -228,6 +251,7 @@ class StandaloneRouting extends Component {
         studies,
         studyInstanceUIDs,
         seriesInstanceUIDs,
+        isDualMod,
         loading: false,
       });
     } catch (error) {
@@ -244,7 +268,12 @@ class StandaloneRouting extends Component {
     }
 
     if (this.state.studies) {
-      return <ConnectedViewer studies={this.state.studies} />;
+      return (
+        <ConnectedViewer
+          studies={this.state.studies}
+          isDualMod={this.state.isDualMod}
+        />
+      );
     } else {
       const unknownError = `There happened error while loading viewer`;
       return <NotFound message={unknownError} />;

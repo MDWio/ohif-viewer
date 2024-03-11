@@ -51,6 +51,7 @@ class Viewer extends Component {
       type: PropTypes.string,
       wadoRoot: PropTypes.string,
     }),
+    setLayout: PropTypes.func,
     onTimepointsUpdated: PropTypes.func,
     onMeasurementsUpdated: PropTypes.func,
     // window.store.getState().viewports.viewportSpecificData
@@ -58,6 +59,7 @@ class Viewer extends Component {
     // window.store.getState().viewports.activeViewportIndex
     activeViewportIndex: PropTypes.number.isRequired,
     isStudyLoaded: PropTypes.bool,
+    isDualMod: PropTypes.bool,
     dialog: PropTypes.object,
   };
 
@@ -66,6 +68,10 @@ class Viewer extends Component {
 
     const { activeServer } = this.props;
     const server = Object.assign({}, activeServer);
+
+    if (this.isDualMod()) {
+      this.setLayout(1, 2);
+    }
 
     const external = { servicesManager };
 
@@ -96,6 +102,7 @@ class Viewer extends Component {
     selectedRightSidePanel: '',
     selectedLeftSidePanel: 'studies', // TODO: Don't hardcode this
     thumbnails: [],
+    otherThumbnails: [],
   };
 
   componentWillUnmount() {
@@ -162,6 +169,12 @@ class Viewer extends Component {
     return Promise.resolve();
   };
 
+  setLayout = (numRows, numColumns) => {
+    if (this.props.setLayout) {
+      this.props.setLayout(numRows, numColumns, this.props.viewports);
+    }
+  };
+
   onTimepointsUpdated = timepoints => {
     if (this.props.onTimepointsUpdated) {
       this.props.onTimepointsUpdated(timepoints);
@@ -173,6 +186,15 @@ class Viewer extends Component {
       this.props.onMeasurementsUpdated(measurements);
     }
   };
+
+  getDisplaySetInstanceUID = viewportIndex => {
+    const viewport = this.props.viewports[viewportIndex];
+    return viewport ? viewport.displaySetInstanceUID : undefined;
+  };
+
+  isDualMod() {
+    return this.props.isDualMod && this.props.studies.length === 2;
+  }
 
   componentDidMount() {
     const { studies, isStudyLoaded } = this.props;
@@ -201,18 +223,29 @@ class Viewer extends Component {
         ]);
       }
 
-      const activeViewport = this.props.viewports[
-        this.props.activeViewportIndex
-      ];
-      const activeDisplaySetInstanceUID = activeViewport
-        ? activeViewport.displaySetInstanceUID
-        : undefined;
+      const activeDisplaySetInstanceUID = this.getDisplaySetInstanceUID(
+        this.isDualMod() ? 0 : this.props.activeViewportIndex
+      );
       this.setState({
         thumbnails: _mapStudiesToThumbnails(
+          // [studies[0]],
           studies,
           activeDisplaySetInstanceUID
         ),
       });
+
+      if (this.isDualMod()) {
+        const activeDisplaySetInstanceUIDForSecondViewport = this.getDisplaySetInstanceUID(
+          1
+        );
+        this.setState({
+          otherThumbnails: _mapStudiesToThumbnails(
+            // studies.slice(1),
+            studies,
+            activeDisplaySetInstanceUIDForSecondViewport
+          ),
+        });
+      }
     }
 
     document.addEventListener(
@@ -223,20 +256,14 @@ class Viewer extends Component {
   }
 
   componentDidUpdate(prevProps) {
-    const {
-      studies,
-      isStudyLoaded,
-      activeViewportIndex,
-      viewports,
-    } = this.props;
+    const { studies, isStudyLoaded, activeViewportIndex } = this.props;
 
-    const activeViewport = viewports[activeViewportIndex];
-    const activeDisplaySetInstanceUID = activeViewport
-      ? activeViewport.displaySetInstanceUID
-      : undefined;
+    const activeDisplaySetInstanceUID = this.getDisplaySetInstanceUID(
+      studies.length > 1 ? 0 : this.props.activeViewportIndex
+    );
 
     const prevActiveViewport =
-      prevProps.viewports[prevProps.activeViewportIndex];
+      prevProps.viewports[this.isDualMod() ? 0 : prevProps.activeViewportIndex];
     const prevActiveDisplaySetInstanceUID = prevActiveViewport
       ? prevActiveViewport.displaySetInstanceUID
       : undefined;
@@ -248,11 +275,25 @@ class Viewer extends Component {
     ) {
       this.setState({
         thumbnails: _mapStudiesToThumbnails(
+          // [studies[0]],
           studies,
           activeDisplaySetInstanceUID
         ),
         activeDisplaySetInstanceUID,
       });
+
+      if (this.isDualMod()) {
+        const activeDisplaySetInstanceUIDForSecondViewport = this.getDisplaySetInstanceUID(
+          1
+        );
+        this.setState({
+          otherThumbnails: _mapStudiesToThumbnails(
+            // studies.slice(1),
+            studies,
+            activeDisplaySetInstanceUIDForSecondViewport
+          ),
+        });
+      }
     }
     if (isStudyLoaded && isStudyLoaded !== prevProps.isStudyLoaded) {
       const PatientID = studies[0] && studies[0].PatientID;
@@ -268,17 +309,31 @@ class Viewer extends Component {
   }
 
   _updateThumbnails() {
-    const { studies, activeViewportIndex, viewports } = this.props;
+    const { studies, activeViewportIndex } = this.props;
 
-    const activeViewport = viewports[activeViewportIndex];
-    const activeDisplaySetInstanceUID = activeViewport
-      ? activeViewport.displaySetInstanceUID
-      : undefined;
-
+    const activeDisplaySetInstanceUID = this.getDisplaySetInstanceUID(
+      this.isDualMod() ? 0 : activeViewportIndex
+    );
     this.setState({
-      thumbnails: _mapStudiesToThumbnails(studies, activeDisplaySetInstanceUID),
-      activeDisplaySetInstanceUID,
+      thumbnails: _mapStudiesToThumbnails(
+        // [studies[0]],
+        studies,
+        activeDisplaySetInstanceUID
+      ),
     });
+
+    if (this.isDualMod()) {
+      const activeDisplaySetInstanceUIDForSecondViewport = this.getDisplaySetInstanceUID(
+        1
+      );
+      this.setState({
+        otherThumbnails: _mapStudiesToThumbnails(
+          // studies.slice(1),
+          studies,
+          activeDisplaySetInstanceUIDForSecondViewport
+        ),
+      });
+    }
   }
 
   _getActiveViewport() {
@@ -330,6 +385,7 @@ class Viewer extends Component {
         {/* TOOLBAR */}
         <ErrorBoundaryDialog context="ToolbarRow">
           <ToolbarRow
+            isDualMod={this.isDualMod()}
             activeViewport={
               this.props.viewports[this.props.activeViewportIndex]
             }
@@ -393,6 +449,7 @@ class Viewer extends Component {
                       <ConnectedStudyBrowser
                         studies={thumbnails}
                         studyMetadata={this.props.studies}
+                        viewportIndex={0}
                         showThumbnailProgressBar={
                           studyPrefetcher &&
                           studyPrefetcher.enabled &&
@@ -431,6 +488,41 @@ class Viewer extends Component {
               />
             </ErrorBoundaryDialog>
           </div>
+
+          {/* RIGHT */}
+          {this.isDualMod() && (
+            <ErrorBoundaryDialog context="RightSidePanel">
+              <SidePanel from="right" isOpen={this.state.isLeftSidePanelOpen}>
+                {VisiblePanelLeft ? (
+                  <VisiblePanelLeft
+                    viewports={this.props.viewports}
+                    studies={this.props.studies}
+                    activeIndex={this.props.activeViewportIndex}
+                  />
+                ) : (
+                  <AppContext.Consumer>
+                    {appContext => {
+                      const { appConfig } = appContext;
+                      const { studyPrefetcher } = appConfig;
+                      const { otherThumbnails } = this.state;
+                      return (
+                        <ConnectedStudyBrowser
+                          studies={otherThumbnails}
+                          studyMetadata={this.props.studies}
+                          viewportIndex={1}
+                          showThumbnailProgressBar={
+                            studyPrefetcher &&
+                            studyPrefetcher.enabled &&
+                            studyPrefetcher.displayProgress
+                          }
+                        />
+                      );
+                    }}
+                  </AppContext.Consumer>
+                )}
+              </SidePanel>
+            </ErrorBoundaryDialog>
+          )}
 
           {/* RIGHT */}
           {/* <ErrorBoundaryDialog context="RightSidePanel">

@@ -33,6 +33,7 @@ class ToolbarRow extends Component {
     // NOTE: withDialog, withModal HOCs
     dialog: PropTypes.any,
     modal: PropTypes.any,
+    isDualMod: PropTypes.bool,
   };
 
   static defaultProps = {
@@ -223,7 +224,7 @@ class ToolbarRow extends Component {
             />
           </div>
           {buttonComponents}
-          <ConnectedLayoutButton />
+          {!this.props.isDualMod && <ConnectedLayoutButton />}
           {/* <div
             className="pull-right m-t-1 rm-x-1"
             style={{ marginLeft: 'auto' }}
