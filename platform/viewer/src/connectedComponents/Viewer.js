@@ -192,9 +192,31 @@ class Viewer extends Component {
     return viewport ? viewport.displaySetInstanceUID : undefined;
   };
 
-  isDualMod() {
+  isDualMod = () => {
     return this.props.isDualMod && this.props.studies.length === 2;
-  }
+  };
+
+  setThumbnails = activeDisplaySetInstanceUID => {
+    const { studies } = this.props;
+    this.setState({
+      thumbnails: _mapStudiesToThumbnails(
+        [studies[0]],
+        activeDisplaySetInstanceUID
+      ),
+    });
+
+    if (this.isDualMod()) {
+      const activeDisplaySetInstanceUIDForSecondViewport = this.getDisplaySetInstanceUID(
+        1
+      );
+      this.setState({
+        otherThumbnails: _mapStudiesToThumbnails(
+          studies.slice(1),
+          activeDisplaySetInstanceUIDForSecondViewport
+        ),
+      });
+    }
+  };
 
   componentDidMount() {
     const { studies, isStudyLoaded } = this.props;
@@ -226,26 +248,7 @@ class Viewer extends Component {
       const activeDisplaySetInstanceUID = this.getDisplaySetInstanceUID(
         this.isDualMod() ? 0 : this.props.activeViewportIndex
       );
-      this.setState({
-        thumbnails: _mapStudiesToThumbnails(
-          // [studies[0]],
-          studies,
-          activeDisplaySetInstanceUID
-        ),
-      });
-
-      if (this.isDualMod()) {
-        const activeDisplaySetInstanceUIDForSecondViewport = this.getDisplaySetInstanceUID(
-          1
-        );
-        this.setState({
-          otherThumbnails: _mapStudiesToThumbnails(
-            // studies.slice(1),
-            studies,
-            activeDisplaySetInstanceUIDForSecondViewport
-          ),
-        });
-      }
+      this.setThumbnails(activeDisplaySetInstanceUID);
     }
 
     document.addEventListener(
@@ -273,27 +276,7 @@ class Viewer extends Component {
       activeViewportIndex !== prevProps.activeViewportIndex ||
       activeDisplaySetInstanceUID !== prevActiveDisplaySetInstanceUID
     ) {
-      this.setState({
-        thumbnails: _mapStudiesToThumbnails(
-          // [studies[0]],
-          studies,
-          activeDisplaySetInstanceUID
-        ),
-        activeDisplaySetInstanceUID,
-      });
-
-      if (this.isDualMod()) {
-        const activeDisplaySetInstanceUIDForSecondViewport = this.getDisplaySetInstanceUID(
-          1
-        );
-        this.setState({
-          otherThumbnails: _mapStudiesToThumbnails(
-            // studies.slice(1),
-            studies,
-            activeDisplaySetInstanceUIDForSecondViewport
-          ),
-        });
-      }
+      this.setThumbnails(activeDisplaySetInstanceUID);
     }
     if (isStudyLoaded && isStudyLoaded !== prevProps.isStudyLoaded) {
       const PatientID = studies[0] && studies[0].PatientID;
@@ -309,31 +292,12 @@ class Viewer extends Component {
   }
 
   _updateThumbnails() {
-    const { studies, activeViewportIndex } = this.props;
+    const { activeViewportIndex } = this.props;
 
     const activeDisplaySetInstanceUID = this.getDisplaySetInstanceUID(
       this.isDualMod() ? 0 : activeViewportIndex
     );
-    this.setState({
-      thumbnails: _mapStudiesToThumbnails(
-        // [studies[0]],
-        studies,
-        activeDisplaySetInstanceUID
-      ),
-    });
-
-    if (this.isDualMod()) {
-      const activeDisplaySetInstanceUIDForSecondViewport = this.getDisplaySetInstanceUID(
-        1
-      );
-      this.setState({
-        otherThumbnails: _mapStudiesToThumbnails(
-          // studies.slice(1),
-          studies,
-          activeDisplaySetInstanceUIDForSecondViewport
-        ),
-      });
-    }
+    this.setThumbnails(activeDisplaySetInstanceUID);
   }
 
   _getActiveViewport() {

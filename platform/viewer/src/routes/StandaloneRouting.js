@@ -40,7 +40,7 @@ class StandaloneRouting extends Component {
         // The request is from OpenSearch Dashboards
         const studiesData = JSON.parse(json);
         const studies = [];
-        const isDualMod = query.isDualMod; // Now sent only from OpenSearch Dashboards
+        const isDualMod = Boolean(query.isDualMod); // Now sent only from OpenSearch Dashboards
 
         if (!Array.isArray(images) || !Array.isArray(studiesData)) {
           return reject(new Error('images and json must be an array'));
