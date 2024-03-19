@@ -456,6 +456,7 @@ class Viewer extends Component {
           {/* RIGHT */}
           {this.isDualMod() && (
             <ErrorBoundaryDialog context="RightSidePanel">
+              {/* We use isLeftSidePanelOpen for the RIGHT panel because it responds to 1 button action */}
               <SidePanel from="right" isOpen={this.state.isLeftSidePanelOpen}>
                 {VisiblePanelLeft ? (
                   <VisiblePanelLeft
