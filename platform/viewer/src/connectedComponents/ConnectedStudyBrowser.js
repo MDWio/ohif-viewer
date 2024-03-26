@@ -5,7 +5,7 @@ import findDisplaySetByUID from './findDisplaySetByUID';
 import { servicesManager } from './../App.js';
 import { StudyBrowser } from '../../../ui/src/components/studyBrowser/StudyBrowser';
 
-const { setActiveViewportSpecificData } = OHIF.redux.actions;
+const { setActiveViewportSpecificData, setViewportActive } = OHIF.redux.actions;
 
 const mapDispatchToProps = (dispatch, ownProps) => {
   return {
@@ -113,6 +113,10 @@ const mapDispatchToProps = (dispatch, ownProps) => {
           message,
           type: 'error',
         });
+      }
+
+      if(Number.isInteger(ownProps.viewportIndex) && ownProps.viewportIndex >= 0) {
+        dispatch(setViewportActive(ownProps.viewportIndex));
       }
 
       dispatch(setActiveViewportSpecificData(displaySet));
