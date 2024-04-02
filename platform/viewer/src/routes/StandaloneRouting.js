@@ -97,7 +97,7 @@ class StandaloneRouting extends Component {
               );
             }
 
-            if (instanceNumbers && instanceNumbers[index]) {
+            if (Array.isArray(instanceNumbers) && instanceNumbers[index]) {
               naturalizedDicom.InstanceNumber = Number(instanceNumbers[index]);
             }
 
