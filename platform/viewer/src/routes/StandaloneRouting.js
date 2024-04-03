@@ -97,9 +97,10 @@ class StandaloneRouting extends Component {
               );
             }
 
-            if (instanceNumbers[index]) {
+            if (Array.isArray(instanceNumbers) && instanceNumbers[index]) {
               naturalizedDicom.InstanceNumber = Number(instanceNumbers[index]);
             }
+
             const imageId = 'dicomweb:' + image.url;
             const instance = {
               metadata: naturalizedDicom,
