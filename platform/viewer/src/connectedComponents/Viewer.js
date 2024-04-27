@@ -200,7 +200,7 @@ class Viewer extends Component {
     const { studies } = this.props;
     this.setState({
       thumbnails: _mapStudiesToThumbnails(
-        [studies[0]],
+        this.isDualMod() ? [studies[0]] : studies,
         activeDisplaySetInstanceUID
       ),
     });
@@ -262,7 +262,7 @@ class Viewer extends Component {
     const { studies, isStudyLoaded, activeViewportIndex } = this.props;
 
     const activeDisplaySetInstanceUID = this.getDisplaySetInstanceUID(
-      studies.length > 1 ? 0 : this.props.activeViewportIndex
+      this.isDualMod() ? 0 : this.props.activeViewportIndex
     );
 
     const prevActiveViewport =
