@@ -125,6 +125,10 @@ function normalizePersonName(rawPersonName) {
 }
 
 function capitalizeOnlyFirstLetter(string) {
+  if (!string) {
+    return '';
+  }
+
   string = string.toLowerCase();
   return (
     string
