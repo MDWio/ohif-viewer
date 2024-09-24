@@ -32,165 +32,49 @@ class StandaloneRouting extends Component {
   parseQueryAndRetrieveDICOMWebData(query) {
     return new Promise((resolve, reject) => {
       const url = query.url;
-      const json = query.json;
-      const images = query.images ? JSON.parse(query.images) : null;
-      const token = query.authToken;
+      const username = query.username;
+      const isDualMod = query.isDualMod === 'true';
 
-      if (images && json) {
-        // The request is from OpenSearch Dashboards
-        const studiesData = JSON.parse(json);
-        const studies = [];
-        const isDualMod = Boolean(query.isDualMod); // Now sent only from OpenSearch Dashboards
+      if (!url) {
+        return reject(new Error('No URL was specified. Use ?url=$yourURL'));
+      }
 
-        if (!Array.isArray(images) || !Array.isArray(studiesData)) {
-          return reject(new Error('images and json must be an array'));
+      const oReq = new XMLHttpRequest();
+
+      oReq.addEventListener('error', error => {
+        log.warn('An error occurred while retrieving the JSON data');
+        reject(error);
+      });
+
+      oReq.addEventListener('load', async event => {
+        if (event.target.status !== 201) {
+          reject(new Error('Failed to retrieve data from S3 gateway'));
         }
 
-        if (images.length !== studiesData.length) {
-          return reject(
-            new Error('images and json must have the same elements count')
-          );
+        if (!oReq.responseText) {
+          log.warn('Response was undefined');
+          reject(new Error('Response was undefined'));
         }
 
-        for (const [index, data] of studiesData.entries()) {
-          const imagesForStudy = images[index];
-          if (
-            !imagesForStudy.data ||
-            !Array.isArray(imagesForStudy.data) ||
-            !imagesForStudy.data.length
-          ) {
-            return reject(new Error('images.data for study must be an array'));
-          }
+        const data = JSON.parse(oReq.responseText);
 
-          const metadataProvider = OHIF.cornerstone.metadataProvider;
-
-          let study = structuredClone(data.studies[0]);
-          study.series = [];
-
-          const metadataJson = data.studies[0].series[0].instances[0].metadata;
-          const instanceNumbers = metadataJson.InstanceNumber;
-          const arrayOfSOPInstanceUID = metadataJson.SOPInstanceUID.split(',');
-          const arrayOfSeriesInstanceUID = metadataJson.SeriesInstanceUID.split(
-            ','
-          );
-
-          const arrayOfImages = imagesForStudy.data.map((imageLink, i) => ({
-            url: imageLink.url,
-            SeriesInstanceUID:
-              imageLink.seriesInstanceUID ??
-              arrayOfSeriesInstanceUID[i] ??
-              arrayOfSeriesInstanceUID[arrayOfSeriesInstanceUID.length - 1],
-            SOPInstanceUID:
-              arrayOfSOPInstanceUID[i] ??
-              arrayOfSOPInstanceUID[arrayOfSOPInstanceUID.length - 1] + i,
-          }));
-
-          for (const [index, image] of arrayOfImages.entries()) {
-            let naturalizedDicom = structuredClone(metadataJson);
-            naturalizedDicom.SOPInstanceUID = image.SOPInstanceUID;
-            naturalizedDicom.SeriesInstanceUID = image.SeriesInstanceUID;
-
-            let series;
-            if (study.series !== undefined && study.series.length > 0) {
-              series = study.series.find(
-                series => series.SeriesInstanceUID === image.SeriesInstanceUID
-              );
-            }
-
-            if (Array.isArray(instanceNumbers) && instanceNumbers[index]) {
-              naturalizedDicom.InstanceNumber = Number(instanceNumbers[index]);
-            }
-
-            const imageId = 'dicomweb:' + image.url;
-            const instance = {
-              metadata: naturalizedDicom,
-              url: imageId,
-            };
-
-            if (series) {
-              series.instances.push(instance);
-            } else {
-              study.series.push({
-                SeriesInstanceUID: image.SeriesInstanceUID,
-                SeriesNumber: study.series.length + 1,
-                Modality: naturalizedDicom.Modality,
-                instances: [instance],
-              });
-            }
-
-            metadataProvider.addImageIdToUIDs(imageId, {
-              StudyInstanceUID: naturalizedDicom.StudyInstanceUID,
-              SeriesInstanceUID: naturalizedDicom.SeriesInstanceUID,
-              SOPInstanceUID: naturalizedDicom.SOPInstanceUID,
-            });
-          }
-
-          studies.push(study);
+        if (!data.studies || !data.studies.length) {
+          log.warn('No studies were provided in the JSON data');
+          reject(new Error('No studies were provided in the JSON data'));
         }
 
-        if (studies.length === 0) {
-          return reject(new Error('No studies found'));
-        }
-
-        resolve({ studies, studyInstanceUIDs: [], isDualMod });
-      } else if (json) {
-        const data = JSON.parse(json);
-
-        if (!data) {
-          return reject(new Error('No JSON data found'));
-        }
-
-        // Parse data here and add to metadata provider.
         this.fillMetadata(data);
 
-        resolve({ studies: data.studies, studyInstanceUIDs: [] });
-      } else {
-        if (!url) {
-          return reject(new Error('No URL was specified. Use ?url=$yourURL'));
-        }
+        resolve({ studies: data.studies, studyInstanceUIDs: [], isDualMod });
+      });
 
-        // Define a request to the server to retrieve the study data
-        // as JSON, given a URL that was in the Route
-        const oReq = new XMLHttpRequest();
+      log.info(`Sending Request to: ${url}`);
+      oReq.open('POST', url);
+      oReq.setRequestHeader('x-username', username);
+      oReq.setRequestHeader('Accept', 'application/json');
 
-        // Add event listeners for request failure
-        oReq.addEventListener('error', error => {
-          log.warn('An error occurred while retrieving the JSON data');
-          reject(error);
-        });
-
-        // When the JSON has been returned, parse it into a JavaScript Object
-        // and render the OHIF Viewer with this data
-        oReq.addEventListener('load', async event => {
-          if (event.target.status === 404) {
-            reject(new Error('No JSON data found'));
-          }
-
-          // Parse the response content
-          // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/responseText
-          if (!oReq.responseText) {
-            log.warn('Response was undefined');
-            reject(new Error('Response was undefined'));
-          }
-
-          const data = JSON.parse(oReq.responseText);
-          // Parse data here and add to metadata provider.
-          this.fillMetadata(data);
-
-          resolve({ studies: data.studies, studyInstanceUIDs: [] });
-        });
-
-        // Open the Request to the server for the JSON data
-        // In this case we have a server-side route called /api/
-        // which responds to GET requests with the study data
-        log.info(`Sending Request to: ${url}`);
-        oReq.open('GET', url);
-        oReq.setRequestHeader('Authorization', 'Basic ' + token);
-        oReq.setRequestHeader('Accept', 'application/json');
-
-        // Fire the request to the server
-        oReq.send();
-      }
+      // Fire the request to the server
+      oReq.send();
     });
   }
 
