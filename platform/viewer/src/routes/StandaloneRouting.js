@@ -93,9 +93,6 @@ class StandaloneRouting extends Component {
         for (const instance of series.instances) {
           const { url: imageId, metadata: naturalizedDicom } = instance;
 
-          // Add instance to metadata provider.
-          metadataProvider.addInstance(naturalizedDicom);
-          // Add imageId specific mapping to this data as the URL isn't necessarliy WADO-URI.
           metadataProvider.addImageIdToUIDs(imageId, {
             StudyInstanceUID,
             SeriesInstanceUID,
