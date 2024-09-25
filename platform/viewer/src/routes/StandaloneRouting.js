@@ -72,7 +72,6 @@ class StandaloneRouting extends Component {
 
             resolve({
               studies: data.studies,
-              studyInstanceUIDs: [],
               isDualMod,
             });
           }
