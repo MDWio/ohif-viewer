@@ -62,7 +62,7 @@ class StandaloneRouting extends Component {
           if (
             !data.studies ||
             !Array.isArray(data.studies) ||
-            !(data.studies.length > 0)
+            data.studies.length === 0
           ) {
             log.warn('No studies were provided in the JSON data');
 
