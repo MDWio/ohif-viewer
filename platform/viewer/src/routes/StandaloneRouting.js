@@ -56,16 +56,30 @@ class StandaloneRouting extends Component {
           reject(new Error('Response was undefined'));
         }
 
-        const data = JSON.parse(oReq.responseText);
+        try {
+          const data = JSON.parse(oReq.responseText);
 
-        if (!data.studies || !data.studies.length) {
-          log.warn('No studies were provided in the JSON data');
-          reject(new Error('No studies were provided in the JSON data'));
+          if (
+            !data.studies ||
+            !Array.isArray(data.studies) ||
+            !(data.studies.length > 0)
+          ) {
+            log.warn('No studies were provided in the JSON data');
+
+            reject(new Error('No studies were provided in the JSON data'));
+          } else {
+            this.fillMetadata(data);
+
+            resolve({
+              studies: data.studies,
+              studyInstanceUIDs: [],
+              isDualMod,
+            });
+          }
+        } catch (error) {
+          log.warn('JSON data could not be parsed');
+          reject(new Error('JSON data could not be parsed'));
         }
-
-        this.fillMetadata(data);
-
-        resolve({ studies: data.studies, studyInstanceUIDs: [], isDualMod });
       });
 
       log.info(`Sending Request to: ${url}`);
