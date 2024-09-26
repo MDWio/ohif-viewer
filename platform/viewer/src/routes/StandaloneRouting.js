@@ -32,6 +32,7 @@ class StandaloneRouting extends Component {
   parseQueryAndRetrieveDICOMWebData(query) {
     return new Promise((resolve, reject) => {
       const url = query.url;
+      const token = query.authToken;
       const username = query.username;
       const isDualMod = query.isDualMod === 'true';
 
@@ -47,7 +48,7 @@ class StandaloneRouting extends Component {
       });
 
       oReq.addEventListener('load', async event => {
-        if (event.target.status !== 201) {
+        if (event.target.status !== 201 && event.target.status !== 200) {
           reject(new Error('Failed to retrieve data from S3 gateway'));
         }
 
@@ -82,11 +83,21 @@ class StandaloneRouting extends Component {
       });
 
       log.info(`Sending Request to: ${url}`);
-      oReq.open('POST', url);
-      oReq.setRequestHeader('x-username', username);
+
+      // Required for OpenSearch Dashboards
+      if (username) {
+        oReq.open('POST', url);
+        oReq.setRequestHeader('x-username', username);
+      }
+
+      // Required for Marketplace
+      if (token) {
+        oReq.open('GET', url);
+        oReq.setRequestHeader('Authorization', 'Basic ' + token);
+      }
+
       oReq.setRequestHeader('Accept', 'application/json');
 
-      // Fire the request to the server
       oReq.send();
     });
   }
