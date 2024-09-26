@@ -88,10 +88,8 @@ class StandaloneRouting extends Component {
       if (username) {
         oReq.open('POST', url);
         oReq.setRequestHeader('x-username', username);
-      }
-
-      // Required for Marketplace
-      if (token) {
+      } else if (token) {
+        // Required for Marketplace
         oReq.open('GET', url);
         oReq.setRequestHeader('Authorization', 'Basic ' + token);
       }
