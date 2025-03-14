@@ -73,6 +73,7 @@ class StandaloneRouting extends Component {
 
             resolve({
               studies: data.studies,
+              studyInstanceUIDs: [],
               isDualMod,
             });
           }
@@ -115,6 +116,8 @@ class StandaloneRouting extends Component {
         for (const instance of series.instances) {
           const { url: imageId, metadata: naturalizedDicom } = instance;
 
+          // Add instance to metadata provider.
+          metadataProvider.addInstance(naturalizedDicom);
           metadataProvider.addImageIdToUIDs(imageId, {
             StudyInstanceUID,
             SeriesInstanceUID,

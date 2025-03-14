@@ -18,14 +18,31 @@ const getImageId = imageObj => {
 
 const findImageIdOnStudies = (studies, displaySetInstanceUID) => {
   const study = studies.find(study => {
-    const displaySet = study.displaySets.some(
+    const foundDisplaySet = study.displaySets.some(
       displaySet => displaySet.displaySetInstanceUID === displaySetInstanceUID
     );
-    return displaySet;
+
+    return foundDisplaySet;
   });
+
+  const displaySet = study.displaySets.find(displaySet => {
+    return displaySet.displaySetInstanceUID === displaySetInstanceUID;
+  });
+
+  const seriesInstanceUid = displaySet.SeriesInstanceUID;
+  const sopInstanceUid = displaySet.SOPInstanceUID;
+
   const { series = [] } = study;
-  const { instances = [] } = series[0] || {};
-  const instance = instances[0];
+
+  const a_series = series.find(a_series => {
+    return a_series.SeriesInstanceUID == seriesInstanceUid;
+  });
+
+  const { instances = [] } = a_series || {};
+
+  const instance = instances.find(instance => {
+    return instance.metadata.SOPInstanceUID == sopInstanceUid;
+  });
 
   return getImageId(instance);
 };
@@ -37,8 +54,21 @@ const someInvalidStrings = strings => {
   return invalid;
 };
 
-const getImageInstance = dataset => {
-  return dataset && dataset.images && dataset.images[0];
+const getImageInstance = (displaySet, studies) => {
+  const study = studies.find(
+    s => s.StudyInstanceUID === displaySet.StudyInstanceUID
+  );
+  const series = study.series.find(
+    s => s.SeriesInstanceUID === displaySet.SeriesInstanceUID
+  );
+  const instance = series.instances.find(
+    i => i.metadata.SOPInstanceUID === displaySet.SOPInstanceUID
+  );
+  if (instance) {
+    return instance;
+  }
+
+  return displaySet && displaySet.images && displaySet.images[0];
 };
 
 const getImageInstanceId = imageInstance => {
@@ -79,7 +109,7 @@ const wadorsRetriever = (
 };
 
 const getImageLoaderType = imageId => {
-  const loaderRegExp = /^\w+\:/;
+  const loaderRegExp = /^\w+:/;
   const loaderType = loaderRegExp.exec(imageId);
 
   return (
@@ -92,15 +122,18 @@ const getImageLoaderType = imageId => {
 };
 
 class DicomLoaderService {
-  getLocalData(dataset, studies) {
-    if (dataset && dataset.localFile) {
+  getLocalData(displaySet, studies) {
+    if (displaySet && displaySet.localFile) {
       // Use referenced imageInstance
-      const imageInstance = getImageInstance(dataset);
+      const imageInstance = getImageInstance(displaySet);
       let imageId = getImageInstanceId(imageInstance);
 
       // or Try to get it from studies
       if (someInvalidStrings(imageId)) {
-        imageId = findImageIdOnStudies(studies, dataset.displaySetInstanceUID);
+        imageId = findImageIdOnStudies(
+          studies,
+          displaySet.displaySetInstanceUID
+        );
       }
 
       if (!someInvalidStrings(imageId)) {
@@ -109,11 +142,11 @@ class DicomLoaderService {
     }
   }
 
-  async getDataByImageType(dataset, studies) {
-    const imageInstance = getImageInstance(dataset);
+  async getDataByImageType(displaySet, studies) {
+    const imageInstance = getImageInstance(displaySet, studies);
 
     if (imageInstance) {
-      const imageId = getImageInstanceId(imageInstance);
+      let imageId = getImageInstanceId(imageInstance);
       let getDicomDataMethod = fetchIt;
       const loaderType = getImageLoaderType(imageId);
 
@@ -126,10 +159,12 @@ class DicomLoaderService {
           let blob = await fetch(imageLink).then(r => r.blob());
           const file = new File([blob], 'name');
 
-          const imagePath = cornerstoneWADOImageLoader.wadouri.fileManager.add(file);
+          const imagePath = cornerstoneWADOImageLoader.wadouri.fileManager.add(
+            file
+          );
           return cornerstoneWADOImageLoader.wadouri.loadFileRequest(imagePath);
         }
-        case 'wadors':
+        case 'wadors': {
           const url = imageInstance.getData().wadoRoot;
           const studyInstanceUID = imageInstance.getStudyInstanceUID();
           const seriesInstanceUID = imageInstance.getSeriesInstanceUID();
@@ -152,6 +187,7 @@ class DicomLoaderService {
             sopInstanceUID
           );
           break;
+        }
         case 'wadouri':
           // Strip out the image loader specifier
           imageId = imageId.substring(imageId.indexOf(':') + 1);
@@ -165,18 +201,23 @@ class DicomLoaderService {
 
       return getDicomDataMethod();
     } else if (studies[0].displaySets[0].Modality === 'DOC') {
-      const link = studies[0].series[0].instances[0].url.replace('dicomweb:', '');
+      const link = studies[0].series[0].instances[0].url.replace(
+        'dicomweb:',
+        ''
+      );
 
       let blob = await fetch(link).then(r => r.blob());
       const file = new File([blob], 'name');
 
-      const imagePath = cornerstoneWADOImageLoader.wadouri.fileManager.add(file);
+      const imagePath = cornerstoneWADOImageLoader.wadouri.fileManager.add(
+        file
+      );
 
       return cornerstoneWADOImageLoader.wadouri.loadFileRequest(imagePath);
     }
   }
 
-  getDataByDatasetType(dataset) {
+  getDataByDisplaySetType(displaySet) {
     const {
       StudyInstanceUID,
       SeriesInstanceUID,
@@ -184,7 +225,7 @@ class DicomLoaderService {
       authorizationHeaders,
       wadoRoot,
       wadoUri,
-    } = dataset;
+    } = displaySet;
     // Retrieve wadors or just try to fetch wadouri
     if (!someInvalidStrings(wadoRoot)) {
       return wadorsRetriever(
@@ -199,14 +240,14 @@ class DicomLoaderService {
     }
   }
 
-  *getLoaderIterator(dataset, studies) {
-    yield this.getLocalData(dataset, studies);
-    yield this.getDataByImageType(dataset, studies);
-    yield this.getDataByDatasetType(dataset);
+  *getLoaderIterator(displaySet, studies) {
+    yield this.getLocalData(displaySet, studies);
+    yield this.getDataByImageType(displaySet, studies);
+    yield this.getDataByDisplaySetType(displaySet);
   }
 
-  findDicomDataPromise(dataset, studies) {
-    const loaderIterator = this.getLoaderIterator(dataset, studies);
+  findDicomDataPromise(displaySet, studies) {
+    const loaderIterator = this.getLoaderIterator(displaySet, studies);
     // it returns first valid retriever method.
     for (const loader of loaderIterator) {
       if (loader) {
