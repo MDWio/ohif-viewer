@@ -7,7 +7,9 @@ window.config = {
   studyPrefetcher: {
     enabled: true,
     order: 'closest',
-    displaySetCount: 3,
+    // 'all' doesn't respond to switching active display set,
+    // so setting large number for 'closest'
+    displaySetCount: 100,
     preventCache: false,
     prefetchDisplaySetsTimeout: 300,
     maxNumPrefetchRequests: 100,
