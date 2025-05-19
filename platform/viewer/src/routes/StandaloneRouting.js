@@ -32,7 +32,15 @@ class StandaloneRouting extends Component {
   parseQueryAndRetrieveDICOMWebData(query) {
     return new Promise((resolve, reject) => {
       const url = query.url;
-      const token = query.authToken;
+
+      let token = query.authToken;
+      if (!token) {
+        const match = document.cookie.match(/(?:^|;\s*)authToken=([^;]*)/);
+        if (match) {
+          token = decodeURIComponent(match[1]);
+        }
+      }
+
       const username = query.username;
       const isDualMod = query.isDualMod === 'true';
 
