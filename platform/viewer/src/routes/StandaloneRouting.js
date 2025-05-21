@@ -31,16 +31,10 @@ class StandaloneRouting extends Component {
 
   parseQueryAndRetrieveDICOMWebData(query) {
     return new Promise((resolve, reject) => {
-      const url = query.url;
+      let url = query.url;
 
-      let token = query.authToken;
-      if (!token) {
-        const match = document.cookie.match(/(?:^|;\s*)authToken=([^;]*)/);
-        if (match) {
-          token = decodeURIComponent(match[1]);
-        }
-      }
-
+      const token = query.authToken;
+      const cookieName = query.cookieName;
       const username = query.username;
       const isDualMod = query.isDualMod === 'true';
 
@@ -97,10 +91,17 @@ class StandaloneRouting extends Component {
       if (username) {
         oReq.open('POST', url);
         oReq.setRequestHeader('x-username', username);
-      } else if (token) {
+      } else {
         // Required for Marketplace
+        if (cookieName) {
+          url += `?cookieName=${cookieName}`;
+          oReq.withCredentials = true;
+        }
         oReq.open('GET', url);
-        oReq.setRequestHeader('Authorization', 'Basic ' + token);
+
+        if (token) {
+          oReq.setRequestHeader('Authorization', 'Basic ' + token);
+        }
       }
 
       oReq.setRequestHeader('Accept', 'application/json');
