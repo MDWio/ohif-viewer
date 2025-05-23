@@ -31,10 +31,9 @@ class StandaloneRouting extends Component {
 
   parseQueryAndRetrieveDICOMWebData(query) {
     return new Promise((resolve, reject) => {
-      let url = query.url;
+      const url = query.url;
 
       const token = query.authToken;
-      const cookieName = query.cookieName;
       const username = query.username;
       const isDualMod = query.isDualMod === 'true';
 
@@ -93,10 +92,11 @@ class StandaloneRouting extends Component {
         oReq.setRequestHeader('x-username', username);
       } else {
         // Required for Marketplace
-        if (cookieName) {
-          url += `?cookieName=${cookieName}`;
+        if (!token) {
+          // Cookie workflow
           oReq.withCredentials = true;
         }
+
         oReq.open('GET', url);
 
         if (token) {
