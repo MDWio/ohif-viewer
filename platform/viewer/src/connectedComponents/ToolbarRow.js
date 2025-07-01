@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { withTranslation } from 'react-i18next';
+import { UserPreferences } from '../components/UserPreferences/UserPreferences';
 
 import { MODULE_TYPES } from '@ohif/core';
 import {
@@ -200,6 +201,14 @@ class ToolbarRow extends Component {
     }
   };
 
+  handleOpenUserPreferences = () => {
+    const { modal } = this.props;
+    modal.show({
+      content: UserPreferences,
+      title: 'User Preferences',
+    });
+  };
+
   render() {
     const buttonComponents = _getButtonComponents.call(
       this,
@@ -224,6 +233,11 @@ class ToolbarRow extends Component {
             />
           </div>
           {buttonComponents}
+          <ToolbarButton
+            label="Preferences"
+            icon="cog"
+            onClick={this.handleOpenUserPreferences}
+          />
           {!this.props.isDualMod && <ConnectedLayoutButton />}
           {/* <div
             className="pull-right m-t-1 rm-x-1"

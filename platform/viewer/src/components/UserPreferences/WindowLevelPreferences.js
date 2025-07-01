@@ -6,9 +6,10 @@ import { redux } from '@ohif/core';
 import { TabFooter, useSnackbarContext } from '@ohif/ui';
 import { useTranslation } from 'react-i18next';
 
-const { actions } = redux;
-
 import './WindowLevelPreferences.styl';
+import { defaultState as preferencesDefaultState } from '@ohif/core/src/redux/reducers/preferences';
+
+const { actions } = redux;
 
 function WindowLevelPreferences({ onClose }) {
   const dispatch = useDispatch();
@@ -25,9 +26,38 @@ function WindowLevelPreferences({ onClose }) {
   });
 
   const { t } = useTranslation('UserPreferencesModal');
-  const onResetPreferences = () => {};
   const hasErrors = false;
+
   const onSave = () => {
+    const invalid = Object.entries(state.values).some(([key, preset]) => {
+      const desc = preset.description && preset.description.trim();
+      const win =
+        preset.window !== undefined && preset.window !== null
+          ? preset.window.toString().trim()
+          : '';
+      const lvl =
+        preset.level !== undefined && preset.level !== null
+          ? preset.level.toString().trim()
+          : '';
+
+      if (desc) {
+        return !win || !lvl;
+      } else {
+        return win || lvl;
+      }
+    });
+
+    if (invalid) {
+      snackbar.show({
+        message: t(
+          'Please fill in Window and Level for every preset with a Description, and leave all fields empty for unused presets.'
+        ),
+        type: 'warning',
+      });
+
+      return;
+    }
+
     dispatch(actions.setUserPreferences({ windowLevelData: state.values }));
 
     onClose();
@@ -40,14 +70,22 @@ function WindowLevelPreferences({ onClose }) {
 
   const snackbar = useSnackbarContext();
 
+  const onResetPreferences = () => {
+    const defaultPresets = preferencesDefaultState.windowLevelData;
+
+    setState({ values: { ...defaultPresets } });
+    dispatch(actions.setUserPreferences({ windowLevelData: defaultPresets }));
+
+    snackbar.show({
+      message: t('ResetMessage', 'Window Level presets have been reset.'),
+      type: 'info',
+    });
+  };
+
   const handleInputChange = event => {
     const $target = event.target;
     const { key, inputname } = $target.dataset;
     const inputValue = $target.value;
-
-    if (!state.values[key] || !state.values[key][inputname]) {
-      return;
-    }
 
     setState(prevState => ({
       ...prevState,
