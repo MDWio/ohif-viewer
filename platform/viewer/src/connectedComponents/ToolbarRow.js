@@ -34,11 +34,12 @@ class ToolbarRow extends Component {
     // NOTE: withDialog, withModal HOCs
     dialog: PropTypes.any,
     modal: PropTypes.any,
-    isDualMod: PropTypes.bool,
+    isMultipleMode: PropTypes.bool,
   };
 
   static defaultProps = {
     studies: [],
+    isMultipleMode: false,
   };
 
   constructor(props) {
@@ -238,7 +239,7 @@ class ToolbarRow extends Component {
             icon="cog"
             onClick={this.handleOpenUserPreferences}
           />
-          {!this.props.isDualMod && <ConnectedLayoutButton />}
+          {!this.props.isMultipleMode && <ConnectedLayoutButton />}
           {/* <div
             className="pull-right m-t-1 rm-x-1"
             style={{ marginLeft: 'auto' }}
