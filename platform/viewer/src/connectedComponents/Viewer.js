@@ -9,7 +9,6 @@ import moment from 'moment';
 import ToolbarRow from './ToolbarRow.js';
 import ConnectedStudyBrowser from './ConnectedStudyBrowser.js';
 import ConnectedViewerMain from './ConnectedViewerMain.js';
-import SidePanel from './../components/SidePanel.js';
 import ErrorBoundaryDialog from './../components/ErrorBoundaryDialog';
 import { extensionManager, servicesManager } from './../App.js';
 import { ReconstructionIssues } from './../../../core/src/enums.js';
@@ -20,52 +19,10 @@ import AppContext from '../context/AppContext';
 import './Viewer.css';
 import StudyPrefetcher from '../components/StudyPrefetcher.js';
 import StudyLoadingMonitor from '../components/StudyLoadingMonitor';
+import SplitPanel from '../components/SplitPanel.js';
+import SidePanel from '../components/SidePanel.js';
 
 const { studyMetadataManager } = OHIF.utils;
-
-function SplitPanel({
-  topStudy,
-  bottomStudy,
-  viewportIndexTop,
-  viewportIndexBottom,
-  topStudyMetadata,
-  bottomStudyMetadata,
-  activeViewportIndex,
-}) {
-  const isTopActive = activeViewportIndex === viewportIndexTop;
-  const isBottomActive = activeViewportIndex === viewportIndexBottom;
-
-  return (
-    <div className="viewer-split-panel">
-      <div
-        className={`viewer-split-panel-top ${
-          isTopActive ? 'active' : 'inactive'
-        }`}
-      >
-        <div className="viewer-split-panel-content">
-          <ConnectedStudyBrowser
-            studies={topStudy}
-            studyMetadata={topStudyMetadata}
-            viewportIndex={viewportIndexTop}
-          />
-        </div>
-      </div>
-      <div
-        className={`viewer-split-panel-bottom ${
-          isBottomActive ? 'active' : 'inactive'
-        }`}
-      >
-        <div className="viewer-split-panel-content">
-          <ConnectedStudyBrowser
-            studies={bottomStudy}
-            studyMetadata={bottomStudyMetadata}
-            viewportIndex={viewportIndexBottom}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 class Viewer extends Component {
   static propTypes = {
@@ -518,6 +475,11 @@ class Viewer extends Component {
                           topStudyMetadata={[studies[0]]}
                           bottomStudyMetadata={[studies[2]]}
                           activeViewportIndex={this.props.activeViewportIndex}
+                          showThumbnailProgressBar={
+                            studyPrefetcher &&
+                            studyPrefetcher.enabled &&
+                            studyPrefetcher.displayProgress
+                          }
                         />
                       );
                     }
@@ -661,6 +623,11 @@ class Viewer extends Component {
                             topStudyMetadata={[studies[1]]}
                             bottomStudyMetadata={[studies[3]]}
                             activeViewportIndex={this.props.activeViewportIndex}
+                            showThumbnailProgressBar={
+                              studyPrefetcher &&
+                              studyPrefetcher.enabled &&
+                              studyPrefetcher.displayProgress
+                            }
                           />
                         );
                       }

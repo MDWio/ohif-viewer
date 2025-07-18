@@ -1,16 +1,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import ConnectedStudyBrowser from '../../ConnectedStudyBrowser.js';
+import ConnectedStudyBrowser from '../connectedComponents/ConnectedStudyBrowser.js';
 import './SplitPanel.css';
 
 function SplitPanel({
   topStudy,
   bottomStudy,
-  topTitle,
-  bottomTitle,
   viewportIndexTop,
   viewportIndexBottom,
+  topStudyMetadata,
+  bottomStudyMetadata,
   activeViewportIndex,
+  showThumbnailProgressBar,
 }) {
   const isTopActive = activeViewportIndex === viewportIndexTop;
   const isBottomActive = activeViewportIndex === viewportIndexBottom;
@@ -18,12 +19,12 @@ function SplitPanel({
   return (
     <div className="split-panel">
       <div className={`split-panel-top ${isTopActive ? 'active' : 'inactive'}`}>
-        <div className="split-panel-title">{topTitle}</div>
         <div className="split-panel-content">
           <ConnectedStudyBrowser
             studies={topStudy}
-            studyMetadata={topStudy}
+            studyMetadata={topStudyMetadata}
             viewportIndex={viewportIndexTop}
+            showThumbnailProgressBar={showThumbnailProgressBar}
           />
         </div>
       </div>
@@ -32,12 +33,12 @@ function SplitPanel({
           isBottomActive ? 'active' : 'inactive'
         }`}
       >
-        <div className="split-panel-title">{bottomTitle}</div>
         <div className="split-panel-content">
           <ConnectedStudyBrowser
             studies={bottomStudy}
-            studyMetadata={bottomStudy}
+            studyMetadata={bottomStudyMetadata}
             viewportIndex={viewportIndexBottom}
+            showThumbnailProgressBar={showThumbnailProgressBar}
           />
         </div>
       </div>
@@ -52,7 +53,10 @@ SplitPanel.propTypes = {
   bottomTitle: PropTypes.string,
   viewportIndexTop: PropTypes.number,
   viewportIndexBottom: PropTypes.number,
+  topStudyMetadata: PropTypes.any,
+  bottomStudyMetadata: PropTypes.any,
   activeViewportIndex: PropTypes.number,
+  showThumbnailProgressBar: PropTypes.bool,
 };
 
 export default SplitPanel;
