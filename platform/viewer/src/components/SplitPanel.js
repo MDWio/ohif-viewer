@@ -47,14 +47,14 @@ function SplitPanel({
 }
 
 SplitPanel.propTypes = {
-  topStudy: PropTypes.any,
-  bottomStudy: PropTypes.any,
+  topStudy: PropTypes.arrayOf(PropTypes.object),
+  bottomStudy: PropTypes.arrayOf(PropTypes.object),
   topTitle: PropTypes.string,
   bottomTitle: PropTypes.string,
   viewportIndexTop: PropTypes.number,
   viewportIndexBottom: PropTypes.number,
-  topStudyMetadata: PropTypes.any,
-  bottomStudyMetadata: PropTypes.any,
+  topStudyMetadata: PropTypes.arrayOf(PropTypes.object),
+  bottomStudyMetadata: PropTypes.arrayOf(PropTypes.object),
   activeViewportIndex: PropTypes.number,
   showThumbnailProgressBar: PropTypes.bool,
 };
