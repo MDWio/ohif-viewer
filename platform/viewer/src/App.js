@@ -82,6 +82,20 @@ window.ohif.app = {
   extensionManager,
 };
 
+// Patch canvas getContext to improve performance for frequent reads
+if (typeof HTMLCanvasElement !== 'undefined') {
+  const originalGetContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function(
+    contextType,
+    attributes = {}
+  ) {
+    if (contextType === '2d' && !('willReadFrequently' in attributes)) {
+      attributes.willReadFrequently = true;
+    }
+    return originalGetContext.call(this, contextType, attributes);
+  };
+}
+
 class App extends Component {
   static propTypes = {
     config: PropTypes.oneOfType([

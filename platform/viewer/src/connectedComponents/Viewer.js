@@ -34,9 +34,18 @@ class Viewer extends Component {
           PropTypes.shape({
             displaySetInstanceUID: PropTypes.string.isRequired,
             SeriesDescription: PropTypes.string,
-            SeriesNumber: PropTypes.number,
-            InstanceNumber: PropTypes.number,
-            numImageFrames: PropTypes.number,
+            SeriesNumber: PropTypes.oneOfType([
+              PropTypes.number,
+              PropTypes.string,
+            ]),
+            InstanceNumber: PropTypes.oneOfType([
+              PropTypes.number,
+              PropTypes.string,
+            ]),
+            numImageFrames: PropTypes.oneOfType([
+              PropTypes.number,
+              PropTypes.string,
+            ]),
             Modality: PropTypes.string.isRequired,
             images: PropTypes.arrayOf(
               PropTypes.shape({
@@ -148,7 +157,11 @@ class Viewer extends Component {
       {
         timepointType: 'baseline',
         timepointId: 'TimepointId',
-        studyInstanceUIDs: this.props.studyInstanceUIDs,
+        studyInstanceUIDs:
+          this.props.studyInstanceUIDs ||
+          (this.props.studies
+            ? this.props.studies.map(study => study.StudyInstanceUID)
+            : []),
         PatientID: filter.PatientID,
         earliestDate,
         latestDate,
