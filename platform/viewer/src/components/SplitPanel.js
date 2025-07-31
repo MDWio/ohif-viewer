@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import ConnectedStudyBrowser from '../connectedComponents/ConnectedStudyBrowser.js';
 import './SplitPanel.css';
 
-function SplitPanel({
+const SplitPanel = React.memo(function SplitPanel({
   topStudy,
   bottomStudy,
   viewportIndexTop,
@@ -29,9 +29,8 @@ function SplitPanel({
         </div>
       </div>
       <div
-        className={`split-panel-bottom ${
-          isBottomActive ? 'active' : 'inactive'
-        }`}
+        className={`split-panel-bottom ${isBottomActive ? 'active' : 'inactive'
+          }`}
       >
         <div className="split-panel-content">
           <ConnectedStudyBrowser
@@ -44,7 +43,18 @@ function SplitPanel({
       </div>
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.topStudy === nextProps.topStudy &&
+    prevProps.bottomStudy === nextProps.bottomStudy &&
+    prevProps.topStudyMetadata === nextProps.topStudyMetadata &&
+    prevProps.bottomStudyMetadata === nextProps.bottomStudyMetadata &&
+    prevProps.viewportIndexTop === nextProps.viewportIndexTop &&
+    prevProps.viewportIndexBottom === nextProps.viewportIndexBottom &&
+    prevProps.activeViewportIndex === nextProps.activeViewportIndex &&
+    prevProps.showThumbnailProgressBar === nextProps.showThumbnailProgressBar
+  );
+});
 
 SplitPanel.propTypes = {
   topStudy: PropTypes.arrayOf(PropTypes.object),

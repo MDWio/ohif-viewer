@@ -5,7 +5,7 @@ import throttle from 'lodash.throttle';
 import { setEnabledElement } from './state';
 import initSRTools from './tools/initSRTools';
 
-const { setViewportActive, setViewportSpecificData } = OHIF.redux.actions;
+const { setViewportActive, setViewportSpecificData, setActiveViewportSpecificData } = OHIF.redux.actions;
 const {
   onAdded,
   onRemoved,
@@ -57,8 +57,8 @@ const mapStateToProps = (state, ownProps) => {
     isStackPrefetchEnabled: ownProps.hasOwnProperty('isStackPrefetchEnabled')
       ? ownProps.isStackPrefetchEnabled
       : ownProps.stackPrefetch
-      ? ownProps.stackPrefetch.enabled
-      : isActive,
+        ? ownProps.stackPrefetch.enabled
+        : isActive,
     isPlaying,
     frameRate,
     //stack: viewportSpecificData.stack,
@@ -72,6 +72,34 @@ const mapDispatchToProps = (dispatch, ownProps) => {
   return {
     setViewportActive: () => {
       dispatch(setViewportActive(viewportIndex));
+
+      if (window.store) {
+        const state = window.store.getState();
+        const viewportSpecificData = state.viewports.viewportSpecificData[viewportIndex];
+
+        if (viewportSpecificData && viewportSpecificData.displaySetInstanceUID) {
+          const { studies } = state;
+          let displaySet = null;
+
+          if (studies && studies.length > 0) {
+            for (const study of studies) {
+              if (study.displaySets) {
+                displaySet = study.displaySets.find(ds =>
+                  ds.displaySetInstanceUID === viewportSpecificData.displaySetInstanceUID
+                );
+
+                if (displaySet) {
+                  break;
+                }
+              }
+            }
+          }
+
+          if (displaySet) {
+            dispatch(setActiveViewportSpecificData(displaySet));
+          }
+        }
+      }
     },
 
     setViewportSpecificData: data => {
