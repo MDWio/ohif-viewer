@@ -8,7 +8,6 @@ import moment from 'moment';
 import ToolbarRow from './ToolbarRow.js';
 import ConnectedStudyBrowser from './ConnectedStudyBrowser.js';
 import ConnectedViewerMain from './ConnectedViewerMain.js';
-import SidePanel from './../components/SidePanel.js';
 import ErrorBoundaryDialog from './../components/ErrorBoundaryDialog';
 import { extensionManager, servicesManager } from './../App.js';
 import { ReconstructionIssues } from './../../../core/src/enums.js';
@@ -19,6 +18,8 @@ import AppContext from '../context/AppContext';
 import './Viewer.css';
 import StudyPrefetcher from '../components/StudyPrefetcher.js';
 import StudyLoadingMonitor from '../components/StudyLoadingMonitor';
+import SplitPanel from '../components/SplitPanel.js';
+import SidePanel from '../components/SidePanel.js';
 
 const { studyMetadataManager } = OHIF.utils;
 
@@ -33,9 +34,18 @@ class Viewer extends Component {
           PropTypes.shape({
             displaySetInstanceUID: PropTypes.string.isRequired,
             SeriesDescription: PropTypes.string,
-            SeriesNumber: PropTypes.number,
-            InstanceNumber: PropTypes.number,
-            numImageFrames: PropTypes.number,
+            SeriesNumber: PropTypes.oneOfType([
+              PropTypes.number,
+              PropTypes.string,
+            ]),
+            InstanceNumber: PropTypes.oneOfType([
+              PropTypes.number,
+              PropTypes.string,
+            ]),
+            numImageFrames: PropTypes.oneOfType([
+              PropTypes.number,
+              PropTypes.string,
+            ]),
             Modality: PropTypes.string.isRequired,
             images: PropTypes.arrayOf(
               PropTypes.shape({
@@ -59,7 +69,7 @@ class Viewer extends Component {
     // window.store.getState().viewports.activeViewportIndex
     activeViewportIndex: PropTypes.number.isRequired,
     isStudyLoaded: PropTypes.bool,
-    isDualMod: PropTypes.bool,
+    isMultipleMode: PropTypes.bool,
     dialog: PropTypes.object,
   };
 
@@ -69,8 +79,17 @@ class Viewer extends Component {
     const { activeServer } = this.props;
     const server = Object.assign({}, activeServer);
 
-    if (this.isDualMod()) {
-      this.setLayout(1, 2);
+    this.thumbnailCache = new Map();
+
+    if (this.isMultipleMode()) {
+      const numStudies = Math.min(this.props.studies.length, 4);
+      if (numStudies <= 2) {
+        this.setLayout(1, numStudies);
+      } else if (numStudies === 3) {
+        this.setLayout(2, 2);
+      } else if (numStudies === 4) {
+        this.setLayout(2, 2);
+      }
     }
 
     const external = { servicesManager };
@@ -110,6 +129,10 @@ class Viewer extends Component {
       this.props.dialog.dismissAll();
     }
 
+    if (this.thumbnailCache) {
+      this.thumbnailCache.clear();
+    }
+
     document.removeEventListener(
       'segmentationLoadingError',
       this._updateThumbnails
@@ -140,7 +163,11 @@ class Viewer extends Component {
       {
         timepointType: 'baseline',
         timepointId: 'TimepointId',
-        studyInstanceUIDs: this.props.studyInstanceUIDs,
+        studyInstanceUIDs:
+          this.props.studyInstanceUIDs ||
+          (this.props.studies
+            ? this.props.studies.map(study => study.StudyInstanceUID)
+            : []),
         PatientID: filter.PatientID,
         earliestDate,
         latestDate,
@@ -192,29 +219,45 @@ class Viewer extends Component {
     return viewport ? viewport.displaySetInstanceUID : undefined;
   };
 
-  isDualMod = () => {
-    return this.props.isDualMod && this.props.studies.length === 2;
+  isMultipleMode = () => {
+    return (
+      this.props.studies &&
+      this.props.studies.length >= 2 &&
+      this.props.studies.length <= 4
+    );
   };
 
   setThumbnails = activeDisplaySetInstanceUID => {
     const { studies } = this.props;
-    this.setState({
-      thumbnails: _mapStudiesToThumbnails(
-        this.isDualMod() ? [studies[0]] : studies,
-        activeDisplaySetInstanceUID
-      ),
-    });
+    const mainStudies = this.isMultipleMode() ? [studies[0]] : studies;
+    const mainCacheKey = `${mainStudies.map(s => s.StudyInstanceUID).join(',')}-${activeDisplaySetInstanceUID}`;
 
-    if (this.isDualMod()) {
-      const activeDisplaySetInstanceUIDForSecondViewport = this.getDisplaySetInstanceUID(
-        1
-      );
-      this.setState({
-        otherThumbnails: _mapStudiesToThumbnails(
-          studies.slice(1),
-          activeDisplaySetInstanceUIDForSecondViewport
-        ),
-      });
+    let thumbnails = this.thumbnailCache.get(mainCacheKey);
+    if (!thumbnails) {
+      thumbnails = _mapStudiesToThumbnails(mainStudies, activeDisplaySetInstanceUID);
+      this.thumbnailCache.set(mainCacheKey, thumbnails);
+    }
+
+    this.setState({ thumbnails });
+
+    if (this.isMultipleMode()) {
+      const otherThumbnails = [];
+      for (let i = 1; i < Math.min(studies.length, 4); i++) {
+        const activeDisplaySetInstanceUIDForViewport = this.getDisplaySetInstanceUID(i);
+        const otherCacheKey = `${studies[i].StudyInstanceUID}-${activeDisplaySetInstanceUIDForViewport}`;
+
+        let cachedOtherThumbnails = this.thumbnailCache.get(otherCacheKey);
+        if (!cachedOtherThumbnails) {
+          cachedOtherThumbnails = _mapStudiesToThumbnails(
+            [studies[i]],
+            activeDisplaySetInstanceUIDForViewport
+          );
+          this.thumbnailCache.set(otherCacheKey, cachedOtherThumbnails);
+        }
+
+        otherThumbnails.push(...cachedOtherThumbnails);
+      }
+      this.setState({ otherThumbnails });
     }
   };
 
@@ -246,7 +289,7 @@ class Viewer extends Component {
       }
 
       const activeDisplaySetInstanceUID = this.getDisplaySetInstanceUID(
-        this.isDualMod() ? 0 : this.props.activeViewportIndex
+        this.isMultipleMode() ? 0 : this.props.activeViewportIndex
       );
       this.setThumbnails(activeDisplaySetInstanceUID);
     }
@@ -261,23 +304,29 @@ class Viewer extends Component {
   componentDidUpdate(prevProps) {
     const { studies, isStudyLoaded, activeViewportIndex } = this.props;
 
-    const activeDisplaySetInstanceUID = this.getDisplaySetInstanceUID(
-      this.isDualMod() ? 0 : this.props.activeViewportIndex
-    );
+    if (studies !== prevProps.studies) {
+      this.thumbnailCache.clear();
+    }
 
+    const studiesChanged = studies !== prevProps.studies;
+    const viewportChanged = activeViewportIndex !== prevProps.activeViewportIndex;
+
+    const activeDisplaySetInstanceUID = this.getDisplaySetInstanceUID(
+      this.isMultipleMode() ? 0 : this.props.activeViewportIndex
+    );
     const prevActiveViewport =
-      prevProps.viewports[this.isDualMod() ? 0 : prevProps.activeViewportIndex];
+      prevProps.viewports[
+      this.isMultipleMode() ? 0 : prevProps.activeViewportIndex
+      ];
     const prevActiveDisplaySetInstanceUID = prevActiveViewport
       ? prevActiveViewport.displaySetInstanceUID
       : undefined;
+    const displaySetChanged = activeDisplaySetInstanceUID !== prevActiveDisplaySetInstanceUID;
 
-    if (
-      studies !== prevProps.studies ||
-      activeViewportIndex !== prevProps.activeViewportIndex ||
-      activeDisplaySetInstanceUID !== prevActiveDisplaySetInstanceUID
-    ) {
+    if (studiesChanged || displaySetChanged || (this.isMultipleMode() && viewportChanged)) {
       this.setThumbnails(activeDisplaySetInstanceUID);
     }
+
     if (isStudyLoaded && isStudyLoaded !== prevProps.isStudyLoaded) {
       const PatientID = studies[0] && studies[0].PatientID;
       const { currentTimepointId } = this;
@@ -295,7 +344,7 @@ class Viewer extends Component {
     const { activeViewportIndex } = this.props;
 
     const activeDisplaySetInstanceUID = this.getDisplaySetInstanceUID(
-      this.isDualMod() ? 0 : activeViewportIndex
+      this.isMultipleMode() ? 0 : activeViewportIndex
     );
     this.setThumbnails(activeDisplaySetInstanceUID);
   }
@@ -349,7 +398,7 @@ class Viewer extends Component {
         {/* TOOLBAR */}
         <ErrorBoundaryDialog context="ToolbarRow">
           <ToolbarRow
-            isDualMod={this.isDualMod()}
+            isMultipleMode={this.isMultipleMode()}
             activeViewport={
               this.props.viewports[this.props.activeViewportIndex]
             }
@@ -397,33 +446,99 @@ class Viewer extends Component {
           {/* LEFT */}
           <ErrorBoundaryDialog context="LeftSidePanel">
             <SidePanel from="left" isOpen={this.state.isLeftSidePanelOpen}>
-              {VisiblePanelLeft ? (
-                <VisiblePanelLeft
-                  viewports={this.props.viewports}
-                  studies={this.props.studies}
-                  activeIndex={this.props.activeViewportIndex}
-                />
-              ) : (
-                <AppContext.Consumer>
-                  {appContext => {
-                    const { appConfig } = appContext;
-                    const { studyPrefetcher } = appConfig;
-                    const { thumbnails } = this.state;
+              <AppContext.Consumer>
+                {appContext => {
+                  const { appConfig } = appContext;
+                  const { studyPrefetcher } = appConfig;
+                  const { studies } = this.props;
+                  const studyCount = studies.length;
+                  const { thumbnails } = this.state;
+
+                  if (VisiblePanelLeft) {
                     return (
-                      <ConnectedStudyBrowser
-                        studies={thumbnails}
-                        studyMetadata={this.props.studies}
-                        viewportIndex={0}
-                        showThumbnailProgressBar={
-                          studyPrefetcher &&
-                          studyPrefetcher.enabled &&
-                          studyPrefetcher.displayProgress
-                        }
+                      <VisiblePanelLeft
+                        viewports={this.props.viewports}
+                        studies={this.props.studies}
+                        activeIndex={this.props.activeViewportIndex}
                       />
                     );
-                  }}
-                </AppContext.Consumer>
-              )}
+                  }
+
+                  switch (studyCount) {
+                    case 2: {
+                      const isActive = this.props.activeViewportIndex === 0;
+
+                      return (
+                        <div
+                          className={`study-browser-panel ${isActive
+                            ? 'active' : 'inactive'
+                            }`}
+                        >
+                          <ConnectedStudyBrowser
+                            studies={thumbnails}
+                            studyMetadata={
+                              this.isMultipleMode() ? [studies[0]] : studies
+                            }
+                            viewportIndex={0}
+                            showThumbnailProgressBar={
+                              studyPrefetcher &&
+                              studyPrefetcher.enabled &&
+                              studyPrefetcher.displayProgress
+                            }
+                          />
+                        </div>
+                      );
+                    }
+
+                    case 3:
+                    case 4: {
+                      const mappedStudies = _mapStudiesToThumbnails(studies);
+
+                      return (
+                        <SplitPanel
+                          topStudy={[mappedStudies[0]]}
+                          bottomStudy={[mappedStudies[2]]}
+                          viewportIndexTop={0}
+                          viewportIndexBottom={2}
+                          topStudyMetadata={[studies[0]]}
+                          bottomStudyMetadata={[studies[2]]}
+                          activeViewportIndex={this.props.activeViewportIndex}
+                          showThumbnailProgressBar={
+                            studyPrefetcher &&
+                            studyPrefetcher.enabled &&
+                            studyPrefetcher.displayProgress
+                          }
+                        />
+                      );
+                    }
+
+                    default: {
+                      const isActive = this.props.activeViewportIndex === 0;
+
+                      return (
+                        <div
+                          className={`study-browser-panel ${isActive
+                            ? 'active' : 'inactive'
+                            }`}
+                        >
+                          <ConnectedStudyBrowser
+                            studies={thumbnails}
+                            studyMetadata={
+                              this.isMultipleMode() ? [studies[0]] : studies
+                            }
+                            viewportIndex={0}
+                            showThumbnailProgressBar={
+                              studyPrefetcher &&
+                              studyPrefetcher.enabled &&
+                              studyPrefetcher.displayProgress
+                            }
+                          />
+                        </div>
+                      );
+                    }
+                  }
+                }}
+              </AppContext.Consumer>
             </SidePanel>
           </ErrorBoundaryDialog>
 
@@ -435,6 +550,7 @@ class Viewer extends Component {
                   const { appConfig } = appContext;
                   const { studyPrefetcher } = appConfig;
                   const { studies } = this.props;
+
                   return (
                     studyPrefetcher &&
                     studyPrefetcher.enabled && (
@@ -454,37 +570,121 @@ class Viewer extends Component {
           </div>
 
           {/* RIGHT */}
-          {this.isDualMod() && (
+          {this.isMultipleMode() && (
             <ErrorBoundaryDialog context="RightSidePanel">
-              {/* We use isLeftSidePanelOpen for the RIGHT panel because it responds to 1 button action */}
               <SidePanel from="right" isOpen={this.state.isLeftSidePanelOpen}>
-                {VisiblePanelLeft ? (
-                  <VisiblePanelLeft
-                    viewports={this.props.viewports}
-                    studies={this.props.studies}
-                    activeIndex={this.props.activeViewportIndex}
-                  />
-                ) : (
-                  <AppContext.Consumer>
-                    {appContext => {
-                      const { appConfig } = appContext;
-                      const { studyPrefetcher } = appConfig;
-                      const { otherThumbnails } = this.state;
+                <AppContext.Consumer>
+                  {appContext => {
+                    const { appConfig } = appContext;
+                    const { studyPrefetcher } = appConfig;
+                    const { studies } = this.props;
+                    const studyCount = studies.length;
+                    const { otherThumbnails } = this.state;
+
+                    if (VisiblePanelLeft) {
                       return (
-                        <ConnectedStudyBrowser
-                          studies={otherThumbnails}
-                          studyMetadata={this.props.studies}
-                          viewportIndex={1}
-                          showThumbnailProgressBar={
-                            studyPrefetcher &&
-                            studyPrefetcher.enabled &&
-                            studyPrefetcher.displayProgress
-                          }
+                        <VisiblePanelLeft
+                          viewports={this.props.viewports}
+                          studies={this.props.studies}
+                          activeIndex={this.props.activeViewportIndex}
                         />
                       );
-                    }}
-                  </AppContext.Consumer>
-                )}
+                    }
+
+                    switch (studyCount) {
+                      case 2: {
+                        const isActive = this.props.activeViewportIndex === 1;
+
+                        return (
+                          <div
+                            className={`study-browser-panel ${isActive
+                              ? 'active' : 'inactive'
+                              }`}
+                          >
+                            <ConnectedStudyBrowser
+                              studies={otherThumbnails}
+                              studyMetadata={[studies[1]]}
+                              viewportIndex={1}
+                              showThumbnailProgressBar={
+                                studyPrefetcher &&
+                                studyPrefetcher.enabled &&
+                                studyPrefetcher.displayProgress
+                              }
+                            />
+                          </div>
+                        );
+                      }
+
+                      case 3: {
+                        const mappedStudies = _mapStudiesToThumbnails(studies);
+                        const isActive = this.props.activeViewportIndex === 1;
+
+                        return (
+                          <div
+                            className={`study-browser-panel ${isActive
+                              ? 'active' : 'inactive'
+                              }`}
+                          >
+                            <ConnectedStudyBrowser
+                              studies={[mappedStudies[1]]}
+                              studyMetadata={[studies[1]]}
+                              viewportIndex={1}
+                              showThumbnailProgressBar={
+                                studyPrefetcher &&
+                                studyPrefetcher.enabled &&
+                                studyPrefetcher.displayProgress
+                              }
+                            />
+                          </div>
+                        );
+                      }
+
+                      case 4: {
+                        const mappedStudies = _mapStudiesToThumbnails(studies);
+
+                        return (
+                          <SplitPanel
+                            topStudy={[mappedStudies[1]]}
+                            bottomStudy={[mappedStudies[3]]}
+                            viewportIndexTop={1}
+                            viewportIndexBottom={3}
+                            topStudyMetadata={[studies[1]]}
+                            bottomStudyMetadata={[studies[3]]}
+                            activeViewportIndex={this.props.activeViewportIndex}
+                            showThumbnailProgressBar={
+                              studyPrefetcher &&
+                              studyPrefetcher.enabled &&
+                              studyPrefetcher.displayProgress
+                            }
+                          />
+                        );
+                      }
+
+                      default: {
+                        const isActive = this.props.activeViewportIndex === 1;
+
+                        return (
+                          <div
+                            className={`study-browser-panel ${isActive
+                              ? 'active' : 'inactive'
+                              }`}
+                          >
+                            <ConnectedStudyBrowser
+                              studies={otherThumbnails}
+                              studyMetadata={studies.slice(1)}
+                              viewportIndex={1}
+                              showThumbnailProgressBar={
+                                studyPrefetcher &&
+                                studyPrefetcher.enabled &&
+                                studyPrefetcher.displayProgress
+                              }
+                            />
+                          </div>
+                        );
+                      }
+                    }
+                  }}
+                </AppContext.Consumer>
               </SidePanel>
             </ErrorBoundaryDialog>
           )}
@@ -521,7 +721,7 @@ export default withDialog(Viewer);
  * @param {*object} study
  * @returns {bool}
  */
-const _checkForDerivedDisplaySets = async function(displaySet, study) {
+const _checkForDerivedDisplaySets = async function (displaySet, study) {
   let derivedDisplaySetsNumber = 0;
   if (
     displaySet.Modality &&
@@ -556,7 +756,7 @@ const _checkForDerivedDisplaySets = async function(displaySet, study) {
  * @param {*object} displaySet
  * @returns {[string]} an array of strings containing the warnings
  */
-const _checkForSeriesInconsistencesWarnings = async function(displaySet) {
+const _checkForSeriesInconsistencesWarnings = async function (displaySet) {
   const inconsistencyWarnings = [];
 
   if (displaySet.Modality !== 'SEG') {
@@ -650,7 +850,7 @@ const _checkForSeriesInconsistencesWarnings = async function(displaySet) {
  * @param {string} activeDisplaySetInstanceUID
  * @returns {boolean} is active.
  */
-const _isDisplaySetActive = function(
+const _isDisplaySetActive = function (
   displaySet,
   studies,
   activeDisplaySetInstanceUID
@@ -695,7 +895,7 @@ const _isDisplaySetActive = function(
       );
       active = referencedDisplaySet
         ? activeDisplaySetInstanceUID ===
-          referencedDisplaySet.displaySetInstanceUID
+        referencedDisplaySet.displaySetInstanceUID
         : false;
     } else {
       const referencedDisplaySet = displaySet.getSourceDisplaySet(
@@ -704,7 +904,7 @@ const _isDisplaySetActive = function(
       );
       active = referencedDisplaySet
         ? activeDisplaySetInstanceUID ===
-          referencedDisplaySet.displaySetInstanceUID
+        referencedDisplaySet.displaySetInstanceUID
         : false;
     }
   }
@@ -722,7 +922,7 @@ const _isDisplaySetActive = function(
  * @param {Study[]} studies
  * @param {string} activeDisplaySetInstanceUID
  */
-const _mapStudiesToThumbnails = function(studies, activeDisplaySetInstanceUID) {
+const _mapStudiesToThumbnails = function (studies, activeDisplaySetInstanceUID) {
   return studies.map(study => {
     const { StudyInstanceUID } = study;
     const thumbnails = study.displaySets.map(displaySet => {

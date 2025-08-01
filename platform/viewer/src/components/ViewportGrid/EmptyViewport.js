@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  *
  *
@@ -10,3 +12,5 @@ function EmptyViewport() {
     </div>
   );
 }
+
+export default EmptyViewport;

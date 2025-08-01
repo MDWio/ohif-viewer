@@ -20,7 +20,7 @@ class StandaloneRouting extends Component {
     seriesInstanceUIDs: null,
     error: null,
     loading: true,
-    isDualMod: false,
+    isMultipleMode: false,
   };
 
   static propTypes = {
@@ -35,7 +35,7 @@ class StandaloneRouting extends Component {
 
       const token = query.authToken;
       const username = query.username;
-      const isDualMod = query.isDualMod === 'true';
+      const isMultipleMode = query.isMultipleMode === 'true';
 
       if (!url) {
         return reject(new Error('No URL was specified. Use ?url=$yourURL'));
@@ -75,7 +75,7 @@ class StandaloneRouting extends Component {
             resolve({
               studies: data.studies,
               studyInstanceUIDs: [],
-              isDualMod,
+              isMultipleMode,
             });
           }
         } catch (error) {
@@ -151,7 +151,7 @@ class StandaloneRouting extends Component {
         studies,
         studyInstanceUIDs,
         seriesInstanceUIDs,
-        isDualMod,
+        isMultipleMode,
       } = await this.parseQueryAndRetrieveDICOMWebData(query);
 
       if (studies) {
@@ -167,7 +167,7 @@ class StandaloneRouting extends Component {
         studies,
         studyInstanceUIDs,
         seriesInstanceUIDs,
-        isDualMod,
+        isMultipleMode,
         loading: false,
       });
     } catch (error) {
@@ -187,7 +187,7 @@ class StandaloneRouting extends Component {
       return (
         <ConnectedViewer
           studies={this.state.studies}
-          isDualMod={this.state.isDualMod}
+          isMultipleMode={this.state.isMultipleMode}
         />
       );
     } else {

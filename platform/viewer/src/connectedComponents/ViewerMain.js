@@ -18,6 +18,7 @@ class ViewerMain extends Component {
     layout: PropTypes.object.isRequired,
     setViewportSpecificData: PropTypes.func.isRequired,
     clearViewportSpecificData: PropTypes.func.isRequired,
+    isStudyLoaded: PropTypes.bool,
   };
 
   constructor(props) {
@@ -86,10 +87,13 @@ class ViewerMain extends Component {
     const dirtyViewportPanes = [];
     const { layout, viewportSpecificData } = this.props;
     const { displaySets } = this.state;
+    const { studies } = this.props;
 
     if (!displaySets || !displaySets.length) {
       return;
     }
+
+    const isMultipleMode = studies && studies.length >= 2 && studies.length <= 4;
 
     for (let i = 0; i < layout.viewports.length; i++) {
       const viewportPane = viewportSpecificData[i];
@@ -107,15 +111,35 @@ class ViewerMain extends Component {
         continue;
       }
 
-      const foundDisplaySet =
-        displaySets.find(
-          ds =>
-            !dirtyViewportPanes.some(
-              v => v.displaySetInstanceUID === ds.displaySetInstanceUID
-            )
-        ) || displaySets[displaySets.length - 1];
+      let foundDisplaySet;
 
-      dirtyViewportPanes.push(foundDisplaySet);
+      if (isMultipleMode) {
+        if (i < studies.length) {
+          const targetStudy = studies[i];
+
+          if (targetStudy && targetStudy.displaySets && targetStudy.displaySets.length > 0) {
+            foundDisplaySet = displaySets.find(ds =>
+              ds.StudyInstanceUID === targetStudy.StudyInstanceUID
+            );
+          }
+        }
+      }
+
+      if (!foundDisplaySet && !isMultipleMode) {
+        foundDisplaySet =
+          displaySets.find(
+            ds =>
+              !dirtyViewportPanes.some(
+                v => v.displaySetInstanceUID === ds.displaySetInstanceUID
+              )
+          ) || displaySets[displaySets.length - 1];
+      }
+
+      if (foundDisplaySet) {
+        dirtyViewportPanes.push(foundDisplaySet);
+      } else {
+        dirtyViewportPanes.push(null);
+      }
     }
 
     dirtyViewportPanes.forEach((vp, i) => {
