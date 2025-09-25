@@ -125,12 +125,24 @@ class StandaloneRouting extends Component {
         for (const instance of series.instances) {
           const { url: imageId, metadata: naturalizedDicom } = instance;
 
+          const adoptedMetadata = {
+            ...naturalizedDicom,
+            PatientName: study.PatientName
+              ? typeof study.PatientName === 'string'
+                ? { Alphabetic: study.PatientName }
+                : study.PatientName
+              : naturalizedDicom.PatientName,
+            PatientID: study.PatientID || naturalizedDicom.PatientID,
+            StudyDate: study.StudyDate || naturalizedDicom.StudyDate,
+            StudyTime: study.StudyTime || naturalizedDicom.StudyTime,
+          };
+
           // Add instance to metadata provider.
-          metadataProvider.addInstance(naturalizedDicom);
+          metadataProvider.addInstance(adoptedMetadata);
           metadataProvider.addImageIdToUIDs(imageId, {
             StudyInstanceUID,
             SeriesInstanceUID,
-            SOPInstanceUID: naturalizedDicom.SOPInstanceUID,
+            SOPInstanceUID: adoptedMetadata.SOPInstanceUID,
           });
         }
       }
