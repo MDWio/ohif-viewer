@@ -221,7 +221,8 @@ class OHIFCornerstoneViewportOverlay extends PureComponent {
         <div className="top-right overlay-element">
           <div>{studyDescription}</div>
           <div>
-            {formatDICOMDate(studyDate)} {formatDICOMTime(studyTime)}
+            {formatDICOMDate(studyDate)}
+            {studyTime && studyTime.trim() && ` ${formatDICOMTime(studyTime)}`}
           </div>
         </div>
         <div className="bottom-right overlay-element">
