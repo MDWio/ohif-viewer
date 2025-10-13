@@ -70,6 +70,7 @@ class Viewer extends Component {
     activeViewportIndex: PropTypes.number.isRequired,
     isStudyLoaded: PropTypes.bool,
     isMultipleMode: PropTypes.bool,
+    isDualViewportMode: PropTypes.bool,
     dialog: PropTypes.object,
   };
 
@@ -90,6 +91,8 @@ class Viewer extends Component {
       } else if (numStudies === 4) {
         this.setLayout(2, 2);
       }
+    } else if (this.isDualViewportMode()) {
+      this.setLayout(1, 2);
     }
 
     const external = { servicesManager };
@@ -220,6 +223,10 @@ class Viewer extends Component {
   };
 
   isMultipleMode = () => {
+    if (this.props.isMultipleMode !== undefined) {
+      return this.props.isMultipleMode;
+    }
+
     return (
       this.props.studies &&
       this.props.studies.length >= 2 &&
@@ -227,14 +234,34 @@ class Viewer extends Component {
     );
   };
 
+  isDualViewportMode = () => {
+    if (this.isMultipleMode()) {
+      return false;
+    }
+
+    return (
+      this.props.isDualViewportMode &&
+      this.props.studies &&
+      ((this.props.studies.length === 1 &&
+        this.props.studies[0].displaySets &&
+        this.props.studies[0].displaySets.length >= 2) ||
+        this.props.studies.length === 2)
+    );
+  };
+
   setThumbnails = activeDisplaySetInstanceUID => {
     const { studies } = this.props;
     const mainStudies = this.isMultipleMode() ? [studies[0]] : studies;
-    const mainCacheKey = `${mainStudies.map(s => s.StudyInstanceUID).join(',')}-${activeDisplaySetInstanceUID}`;
+    const mainCacheKey = `${mainStudies
+      .map(s => s.StudyInstanceUID)
+      .join(',')}-${activeDisplaySetInstanceUID}`;
 
     let thumbnails = this.thumbnailCache.get(mainCacheKey);
     if (!thumbnails) {
-      thumbnails = _mapStudiesToThumbnails(mainStudies, activeDisplaySetInstanceUID);
+      thumbnails = _mapStudiesToThumbnails(
+        mainStudies,
+        activeDisplaySetInstanceUID
+      );
       this.thumbnailCache.set(mainCacheKey, thumbnails);
     }
 
@@ -243,7 +270,9 @@ class Viewer extends Component {
     if (this.isMultipleMode()) {
       const otherThumbnails = [];
       for (let i = 1; i < Math.min(studies.length, 4); i++) {
-        const activeDisplaySetInstanceUIDForViewport = this.getDisplaySetInstanceUID(i);
+        const activeDisplaySetInstanceUIDForViewport = this.getDisplaySetInstanceUID(
+          i
+        );
         const otherCacheKey = `${studies[i].StudyInstanceUID}-${activeDisplaySetInstanceUIDForViewport}`;
 
         let cachedOtherThumbnails = this.thumbnailCache.get(otherCacheKey);
@@ -309,21 +338,27 @@ class Viewer extends Component {
     }
 
     const studiesChanged = studies !== prevProps.studies;
-    const viewportChanged = activeViewportIndex !== prevProps.activeViewportIndex;
+    const viewportChanged =
+      activeViewportIndex !== prevProps.activeViewportIndex;
 
     const activeDisplaySetInstanceUID = this.getDisplaySetInstanceUID(
       this.isMultipleMode() ? 0 : this.props.activeViewportIndex
     );
     const prevActiveViewport =
       prevProps.viewports[
-      this.isMultipleMode() ? 0 : prevProps.activeViewportIndex
+        this.isMultipleMode() ? 0 : prevProps.activeViewportIndex
       ];
     const prevActiveDisplaySetInstanceUID = prevActiveViewport
       ? prevActiveViewport.displaySetInstanceUID
       : undefined;
-    const displaySetChanged = activeDisplaySetInstanceUID !== prevActiveDisplaySetInstanceUID;
+    const displaySetChanged =
+      activeDisplaySetInstanceUID !== prevActiveDisplaySetInstanceUID;
 
-    if (studiesChanged || displaySetChanged || (this.isMultipleMode() && viewportChanged)) {
+    if (
+      studiesChanged ||
+      displaySetChanged ||
+      (this.isMultipleMode() && viewportChanged)
+    ) {
       this.setThumbnails(activeDisplaySetInstanceUID);
     }
 
@@ -470,9 +505,9 @@ class Viewer extends Component {
 
                       return (
                         <div
-                          className={`study-browser-panel ${isActive
-                            ? 'active' : 'inactive'
-                            }`}
+                          className={`study-browser-panel ${
+                            isActive ? 'active' : 'inactive'
+                          }`}
                         >
                           <ConnectedStudyBrowser
                             studies={thumbnails}
@@ -517,9 +552,9 @@ class Viewer extends Component {
 
                       return (
                         <div
-                          className={`study-browser-panel ${isActive
-                            ? 'active' : 'inactive'
-                            }`}
+                          className={`study-browser-panel ${
+                            isActive ? 'active' : 'inactive'
+                          }`}
                         >
                           <ConnectedStudyBrowser
                             studies={thumbnails}
@@ -565,6 +600,7 @@ class Viewer extends Component {
               <ConnectedViewerMain
                 studies={this.props.studies}
                 isStudyLoaded={this.props.isStudyLoaded}
+                isDualViewportMode={this.props.isDualViewportMode}
               />
             </ErrorBoundaryDialog>
           </div>
@@ -597,9 +633,9 @@ class Viewer extends Component {
 
                         return (
                           <div
-                            className={`study-browser-panel ${isActive
-                              ? 'active' : 'inactive'
-                              }`}
+                            className={`study-browser-panel ${
+                              isActive ? 'active' : 'inactive'
+                            }`}
                           >
                             <ConnectedStudyBrowser
                               studies={otherThumbnails}
@@ -621,9 +657,9 @@ class Viewer extends Component {
 
                         return (
                           <div
-                            className={`study-browser-panel ${isActive
-                              ? 'active' : 'inactive'
-                              }`}
+                            className={`study-browser-panel ${
+                              isActive ? 'active' : 'inactive'
+                            }`}
                           >
                             <ConnectedStudyBrowser
                               studies={[mappedStudies[1]]}
@@ -665,9 +701,9 @@ class Viewer extends Component {
 
                         return (
                           <div
-                            className={`study-browser-panel ${isActive
-                              ? 'active' : 'inactive'
-                              }`}
+                            className={`study-browser-panel ${
+                              isActive ? 'active' : 'inactive'
+                            }`}
                           >
                             <ConnectedStudyBrowser
                               studies={otherThumbnails}
@@ -721,7 +757,7 @@ export default withDialog(Viewer);
  * @param {*object} study
  * @returns {bool}
  */
-const _checkForDerivedDisplaySets = async function (displaySet, study) {
+const _checkForDerivedDisplaySets = async function(displaySet, study) {
   let derivedDisplaySetsNumber = 0;
   if (
     displaySet.Modality &&
@@ -756,7 +792,7 @@ const _checkForDerivedDisplaySets = async function (displaySet, study) {
  * @param {*object} displaySet
  * @returns {[string]} an array of strings containing the warnings
  */
-const _checkForSeriesInconsistencesWarnings = async function (displaySet) {
+const _checkForSeriesInconsistencesWarnings = async function(displaySet) {
   const inconsistencyWarnings = [];
 
   if (displaySet.Modality !== 'SEG') {
@@ -850,7 +886,7 @@ const _checkForSeriesInconsistencesWarnings = async function (displaySet) {
  * @param {string} activeDisplaySetInstanceUID
  * @returns {boolean} is active.
  */
-const _isDisplaySetActive = function (
+const _isDisplaySetActive = function(
   displaySet,
   studies,
   activeDisplaySetInstanceUID
@@ -895,7 +931,7 @@ const _isDisplaySetActive = function (
       );
       active = referencedDisplaySet
         ? activeDisplaySetInstanceUID ===
-        referencedDisplaySet.displaySetInstanceUID
+          referencedDisplaySet.displaySetInstanceUID
         : false;
     } else {
       const referencedDisplaySet = displaySet.getSourceDisplaySet(
@@ -904,7 +940,7 @@ const _isDisplaySetActive = function (
       );
       active = referencedDisplaySet
         ? activeDisplaySetInstanceUID ===
-        referencedDisplaySet.displaySetInstanceUID
+          referencedDisplaySet.displaySetInstanceUID
         : false;
     }
   }
@@ -922,7 +958,7 @@ const _isDisplaySetActive = function (
  * @param {Study[]} studies
  * @param {string} activeDisplaySetInstanceUID
  */
-const _mapStudiesToThumbnails = function (studies, activeDisplaySetInstanceUID) {
+const _mapStudiesToThumbnails = function(studies, activeDisplaySetInstanceUID) {
   return studies.map(study => {
     const { StudyInstanceUID } = study;
     const thumbnails = study.displaySets.map(displaySet => {

@@ -437,6 +437,8 @@ class MetadataProvider {
         metadata = {
           patientName,
           patientId: instance.PatientID,
+          patientSex: instance.PatientSex,
+          patientAge: instance.PatientAge,
         };
 
         break;
@@ -457,6 +459,7 @@ class MetadataProvider {
           studyDate: instance.StudyDate,
           studyTime: instance.StudyTime,
           accessionNumber: instance.AccessionNumber,
+          studyId: instance.StudyID,
         };
 
         break;

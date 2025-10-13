@@ -4,8 +4,13 @@ import { connect } from 'react-redux';
 import throttle from 'lodash.throttle';
 import { setEnabledElement } from './state';
 import initSRTools from './tools/initSRTools';
+import cornerstone from 'cornerstone-core';
 
-const { setViewportActive, setViewportSpecificData, setActiveViewportSpecificData } = OHIF.redux.actions;
+const {
+  setViewportActive,
+  setViewportSpecificData,
+  setActiveViewportSpecificData,
+} = OHIF.redux.actions;
 const {
   onAdded,
   onRemoved,
@@ -57,8 +62,8 @@ const mapStateToProps = (state, ownProps) => {
     isStackPrefetchEnabled: ownProps.hasOwnProperty('isStackPrefetchEnabled')
       ? ownProps.isStackPrefetchEnabled
       : ownProps.stackPrefetch
-        ? ownProps.stackPrefetch.enabled
-        : isActive,
+      ? ownProps.stackPrefetch.enabled
+      : isActive,
     isPlaying,
     frameRate,
     //stack: viewportSpecificData.stack,
@@ -75,17 +80,23 @@ const mapDispatchToProps = (dispatch, ownProps) => {
 
       if (window.store) {
         const state = window.store.getState();
-        const viewportSpecificData = state.viewports.viewportSpecificData[viewportIndex];
+        const viewportSpecificData =
+          state.viewports.viewportSpecificData[viewportIndex];
 
-        if (viewportSpecificData && viewportSpecificData.displaySetInstanceUID) {
+        if (
+          viewportSpecificData &&
+          viewportSpecificData.displaySetInstanceUID
+        ) {
           const { studies } = state;
           let displaySet = null;
 
           if (studies && studies.length > 0) {
             for (const study of studies) {
               if (study.displaySets) {
-                displaySet = study.displaySets.find(ds =>
-                  ds.displaySetInstanceUID === viewportSpecificData.displaySetInstanceUID
+                displaySet = study.displaySets.find(
+                  ds =>
+                    ds.displaySetInstanceUID ===
+                    viewportSpecificData.displaySetInstanceUID
                 );
 
                 if (displaySet) {
@@ -122,6 +133,53 @@ const mapDispatchToProps = (dispatch, ownProps) => {
         })
       );
       initSRTools(enabledElement);
+
+      let lastSeriesInstanceUID = null;
+
+      const onNewImageForDefaults = event => {
+        const imageId = event.detail.image.imageId;
+        const seriesMetadata =
+          cornerstone.metaData.get('generalSeriesModule', imageId) || {};
+        const currentSeriesInstanceUID = seriesMetadata.seriesInstanceUID;
+
+        if (
+          currentSeriesInstanceUID &&
+          currentSeriesInstanceUID !== lastSeriesInstanceUID
+        ) {
+          lastSeriesInstanceUID = currentSeriesInstanceUID;
+
+          setTimeout(() => {
+            if (window.store) {
+              const state = window.store.getState();
+              const { preferences = {} } = state;
+
+              const firstPreset =
+                preferences.windowLevelData && preferences.windowLevelData[1];
+
+              if (firstPreset && firstPreset.window && firstPreset.level) {
+                const {
+                  window: windowWidth,
+                  level: windowCenter,
+                } = firstPreset;
+
+                let viewport = cornerstone.getViewport(enabledElement);
+                if (viewport) {
+                  viewport.voi = {
+                    windowWidth: Number(windowWidth),
+                    windowCenter: Number(windowCenter),
+                  };
+                  cornerstone.setViewport(enabledElement, viewport);
+                }
+              }
+            }
+          });
+        }
+      };
+
+      enabledElement.addEventListener(
+        cornerstone.EVENTS.NEW_IMAGE,
+        onNewImageForDefaults
+      );
     },
 
     onMeasurementsChanged: (event, action) => {

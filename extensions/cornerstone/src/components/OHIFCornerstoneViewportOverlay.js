@@ -74,11 +74,53 @@ class OHIFCornerstoneViewportOverlay extends PureComponent {
 
     const generalStudyModule =
       cornerstone.metaData.get('generalStudyModule', imageId) || {};
-    const { studyDate, studyTime, studyDescription } = generalStudyModule;
+    const {
+      studyDate,
+      studyTime,
+      studyDescription,
+      studyId,
+      accessionNumber,
+    } = generalStudyModule;
+
+    const displayStudyId = studyId || accessionNumber;
+
+    const formatPatientSex = sex => {
+      if (!sex) {
+        return '';
+      }
+
+      const normalized = sex.toUpperCase();
+      switch (normalized) {
+        case 'M':
+        case 'MALE':
+          return 'M';
+        case 'F':
+        case 'FEMALE':
+          return 'F';
+        default:
+          return normalized.charAt(0);
+      }
+    };
+
+    const formatPatientAge = age => {
+      if (!age) {
+        return '';
+      }
+
+      const match = age.match(/^(\d+)([DWMY])$/);
+      if (match) {
+        const numericAge = parseInt(match[1], 10);
+        const unit = match[2];
+
+        return numericAge + unit;
+      }
+
+      return age;
+    };
 
     const patientModule =
       cornerstone.metaData.get('patientModule', imageId) || {};
-    const { patientId, patientName } = patientModule;
+    const { patientId, patientName, patientSex, patientAge } = patientModule;
 
     const generalImageModule =
       cornerstone.metaData.get('generalImageModule', imageId) || {};
@@ -215,8 +257,25 @@ class OHIFCornerstoneViewportOverlay extends PureComponent {
     const normal = (
       <React.Fragment>
         <div className="top-left overlay-element">
-          <div>{formatPN(patientName)}</div>
-          <div>{patientId}</div>
+          <div>
+            {displayStudyId && (
+              <div className="exam-id">Exam ID: {displayStudyId}</div>
+            )}
+            <div>Patient: {formatPN(patientName)}</div>
+            <div>
+              <span className="patient-field">ID: {patientId}</span>
+              {patientSex && (
+                <span className="patient-field">
+                  Sex: {formatPatientSex(patientSex)}
+                </span>
+              )}
+              {patientAge && (
+                <span className="patient-field">
+                  Age: {formatPatientAge(patientAge)}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
         <div className="top-right overlay-element">
           <div>{studyDescription}</div>

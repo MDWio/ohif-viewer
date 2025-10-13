@@ -19,6 +19,7 @@ class ViewerMain extends Component {
     setViewportSpecificData: PropTypes.func.isRequired,
     clearViewportSpecificData: PropTypes.func.isRequired,
     isStudyLoaded: PropTypes.bool,
+    isDualViewportMode: PropTypes.bool,
   };
 
   constructor(props) {
@@ -94,6 +95,7 @@ class ViewerMain extends Component {
     }
 
     const isMultipleMode = studies && studies.length >= 2 && studies.length <= 4;
+    const isDualViewportMode = this.props.isDualViewportMode;
 
     for (let i = 0; i < layout.viewports.length; i++) {
       const viewportPane = viewportSpecificData[i];
@@ -121,6 +123,29 @@ class ViewerMain extends Component {
             foundDisplaySet = displaySets.find(ds =>
               ds.StudyInstanceUID === targetStudy.StudyInstanceUID
             );
+          }
+        }
+      } else if (isDualViewportMode && studies) {
+        if (studies.length === 1) {
+          const study = studies[0];
+          if (study && study.displaySets && study.displaySets.length >= 2) {
+            if (i === 0) {
+              foundDisplaySet = study.displaySets[0];
+            } else if (i === 1) {
+              foundDisplaySet = study.displaySets[study.displaySets.length - 1];
+            }
+          }
+        } else if (studies.length === 2) {
+          if (i === 0) {
+            const firstStudy = studies[0];
+            if (firstStudy && firstStudy.displaySets && firstStudy.displaySets.length > 0) {
+              foundDisplaySet = firstStudy.displaySets[0];
+            }
+          } else if (i === 1) {
+            const secondStudy = studies[1];
+            if (secondStudy && secondStudy.displaySets && secondStudy.displaySets.length > 0) {
+              foundDisplaySet = secondStudy.displaySets[0];
+            }
           }
         }
       }
