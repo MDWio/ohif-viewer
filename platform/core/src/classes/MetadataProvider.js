@@ -455,11 +455,11 @@ class MetadataProvider {
         break;
       case WADO_IMAGE_LOADER_TAGS.GENERAL_STUDY_MODULE:
         metadata = {
+          examId: instance.ExamId,
           studyDescription: instance.StudyDescription,
           studyDate: instance.StudyDate,
           studyTime: instance.StudyTime,
           accessionNumber: instance.AccessionNumber,
-          studyId: instance.StudyID,
         };
 
         break;

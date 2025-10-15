@@ -78,28 +78,21 @@ class OHIFCornerstoneViewportOverlay extends PureComponent {
       studyDate,
       studyTime,
       studyDescription,
-      studyId,
+      examId,
       accessionNumber,
     } = generalStudyModule;
 
-    const displayStudyId = studyId || accessionNumber;
+    const displayExamId = examId || accessionNumber;
 
     const formatPatientSex = sex => {
       if (!sex) {
         return '';
       }
 
-      const normalized = sex.toUpperCase();
-      switch (normalized) {
-        case 'M':
-        case 'MALE':
-          return 'M';
-        case 'F':
-        case 'FEMALE':
-          return 'F';
-        default:
-          return normalized.charAt(0);
-      }
+      return sex
+        .toUpperCase()
+        .trim()
+        .charAt(0);
     };
 
     const formatPatientAge = age => {
@@ -107,15 +100,7 @@ class OHIFCornerstoneViewportOverlay extends PureComponent {
         return '';
       }
 
-      const match = age.match(/^(\d+)([DWMY])$/);
-      if (match) {
-        const numericAge = parseInt(match[1], 10);
-        const unit = match[2];
-
-        return numericAge + unit;
-      }
-
-      return age;
+      return age.replace(/^0+(\d)/, '$1');
     };
 
     const patientModule =
@@ -258,12 +243,14 @@ class OHIFCornerstoneViewportOverlay extends PureComponent {
       <React.Fragment>
         <div className="top-left overlay-element">
           <div>
-            {displayStudyId && (
-              <div className="exam-id">Exam ID: {displayStudyId}</div>
+            {displayExamId && (
+              <div className="exam-id">Exam ID: {displayExamId}</div>
             )}
             <div>Patient: {formatPN(patientName)}</div>
             <div>
-              <span className="patient-field">ID: {patientId}</span>
+              {patientId && (
+                <span className="patient-field">ID: {patientId}</span>
+              )}
               {patientSex && (
                 <span className="patient-field">
                   Sex: {formatPatientSex(patientSex)}

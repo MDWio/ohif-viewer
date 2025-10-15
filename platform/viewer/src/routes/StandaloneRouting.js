@@ -130,6 +130,7 @@ class StandaloneRouting extends Component {
 
           const adoptedMetadata = {
             ...naturalizedDicom,
+            ExamId: study.ExamId || naturalizedDicom.ExamId,
             PatientName: study.PatientName
               ? typeof study.PatientName === 'string'
                 ? { Alphabetic: study.PatientName }
@@ -140,7 +141,6 @@ class StandaloneRouting extends Component {
             PatientAge: study.PatientAge || naturalizedDicom.PatientAge,
             StudyDate: study.StudyDate || naturalizedDicom.StudyDate,
             StudyTime: study.StudyTime || naturalizedDicom.StudyTime,
-            StudyID: study.StudyID || naturalizedDicom.StudyID,
           };
 
           // Add instance to metadata provider.
