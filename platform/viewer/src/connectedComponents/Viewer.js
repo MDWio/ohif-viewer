@@ -224,14 +224,15 @@ class Viewer extends Component {
 
   isMultipleMode = () => {
     if (this.props.isMultipleMode !== undefined) {
-      return this.props.isMultipleMode;
+      return (
+        this.props.isMultipleMode &&
+        (this.props.studies &&
+          this.props.studies.length >= 2 &&
+          this.props.studies.length <= 4)
+      );
     }
 
-    return (
-      this.props.studies &&
-      this.props.studies.length >= 2 &&
-      this.props.studies.length <= 4
-    );
+    return false;
   };
 
   isDualViewportMode = () => {
@@ -245,7 +246,7 @@ class Viewer extends Component {
       ((this.props.studies.length === 1 &&
         this.props.studies[0].displaySets &&
         this.props.studies[0].displaySets.length >= 2) ||
-        this.props.studies.length === 2)
+        this.props.studies.length >= 2)
     );
   };
 
@@ -498,80 +499,78 @@ class Viewer extends Component {
                       />
                     );
                   }
+                  if (this.isMultipleMode()) {
+                    switch (studyCount) {
+                      case 2: {
+                        const isActive = this.props.activeViewportIndex === 0;
 
-                  switch (studyCount) {
-                    case 2: {
-                      const isActive = this.props.activeViewportIndex === 0;
+                        return (
+                          <div
+                            className={`study-browser-panel ${
+                              isActive ? 'active' : 'inactive'
+                            }`}
+                          >
+                            <ConnectedStudyBrowser
+                              studies={thumbnails}
+                              studyMetadata={[studies[0]]}
+                              viewportIndex={0}
+                              showThumbnailProgressBar={
+                                studyPrefetcher &&
+                                studyPrefetcher.enabled &&
+                                studyPrefetcher.displayProgress
+                              }
+                            />
+                          </div>
+                        );
+                      }
 
-                      return (
-                        <div
-                          className={`study-browser-panel ${
-                            isActive ? 'active' : 'inactive'
-                          }`}
-                        >
-                          <ConnectedStudyBrowser
-                            studies={thumbnails}
-                            studyMetadata={
-                              this.isMultipleMode() ? [studies[0]] : studies
-                            }
-                            viewportIndex={0}
+                      case 3:
+                      case 4: {
+                        const mappedStudies = _mapStudiesToThumbnails(studies);
+
+                        return (
+                          <SplitPanel
+                            topStudy={[mappedStudies[0]]}
+                            bottomStudy={[mappedStudies[2]]}
+                            viewportIndexTop={0}
+                            viewportIndexBottom={2}
+                            topStudyMetadata={[studies[0]]}
+                            bottomStudyMetadata={[studies[2]]}
+                            activeViewportIndex={this.props.activeViewportIndex}
                             showThumbnailProgressBar={
                               studyPrefetcher &&
                               studyPrefetcher.enabled &&
                               studyPrefetcher.displayProgress
                             }
                           />
-                        </div>
-                      );
-                    }
+                        );
+                      }
 
-                    case 3:
-                    case 4: {
-                      const mappedStudies = _mapStudiesToThumbnails(studies);
-
-                      return (
-                        <SplitPanel
-                          topStudy={[mappedStudies[0]]}
-                          bottomStudy={[mappedStudies[2]]}
-                          viewportIndexTop={0}
-                          viewportIndexBottom={2}
-                          topStudyMetadata={[studies[0]]}
-                          bottomStudyMetadata={[studies[2]]}
-                          activeViewportIndex={this.props.activeViewportIndex}
-                          showThumbnailProgressBar={
-                            studyPrefetcher &&
-                            studyPrefetcher.enabled &&
-                            studyPrefetcher.displayProgress
-                          }
-                        />
-                      );
-                    }
-
-                    default: {
-                      const isActive = this.props.activeViewportIndex === 0;
-
-                      return (
-                        <div
-                          className={`study-browser-panel ${
-                            isActive ? 'active' : 'inactive'
-                          }`}
-                        >
-                          <ConnectedStudyBrowser
-                            studies={thumbnails}
-                            studyMetadata={
-                              this.isMultipleMode() ? [studies[0]] : studies
-                            }
-                            viewportIndex={0}
-                            showThumbnailProgressBar={
-                              studyPrefetcher &&
-                              studyPrefetcher.enabled &&
-                              studyPrefetcher.displayProgress
-                            }
-                          />
-                        </div>
-                      );
+                      default:
+                        break;
                     }
                   }
+
+                  const isActive = this.props.activeViewportIndex === 0;
+
+                  return (
+                    <div
+                      className={`study-browser-panel ${
+                        isActive ? 'active' : 'inactive'
+                      }`}
+                    >
+                      <ConnectedStudyBrowser
+                        studies={thumbnails}
+                        studyMetadata={studies}
+                        viewportIndex={0}
+                        showThumbnailProgressBar={
+                          studyPrefetcher &&
+                          studyPrefetcher.enabled &&
+                          studyPrefetcher.displayProgress
+                        }
+                      />
+                    </div>
+                  );
                 }}
               </AppContext.Consumer>
             </SidePanel>
