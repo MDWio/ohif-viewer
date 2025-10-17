@@ -82,7 +82,11 @@ class OHIFCornerstoneViewportOverlay extends PureComponent {
       accessionNumber,
     } = generalStudyModule;
 
-    const displayExamId = examId || accessionNumber;
+    const displayExamId = examId
+      ? `#${examId}`
+      : accessionNumber
+      ? accessionNumber
+      : '';
 
     const formatPatientSex = sex => {
       if (!sex) {
@@ -244,24 +248,16 @@ class OHIFCornerstoneViewportOverlay extends PureComponent {
         <div className="top-left overlay-element">
           <div>
             {displayExamId && (
-              <div className="exam-id">Exam ID: {displayExamId}</div>
+              <div className="exam-id">Exam {displayExamId}</div>
             )}
-            <div>Patient: {formatPN(patientName)}</div>
-            <div>
-              {patientId && (
-                <span className="patient-field">ID: {patientId}</span>
-              )}
-              {patientSex && (
-                <span className="patient-field">
-                  Sex: {formatPatientSex(patientSex)}
-                </span>
-              )}
-              {patientAge && (
-                <span className="patient-field">
-                  Age: {formatPatientAge(patientAge)}
-                </span>
-              )}
-            </div>
+            {patientName && <div>Patient Name: {formatPN(patientName)}</div>}
+            {patientId && <div>Patient ID: {patientId}</div>}
+            {patientSex && (
+              <div>Patient Sex: {formatPatientSex(patientSex)} </div>
+            )}
+            {patientAge && (
+              <div>Patient Age: {formatPatientAge(patientAge)} </div>
+            )}
           </div>
         </div>
         <div className="top-right overlay-element">
