@@ -21,6 +21,7 @@ class StandaloneRouting extends Component {
     error: null,
     loading: true,
     isMultipleMode: false,
+    isDualViewportMode: false,
   };
 
   static propTypes = {
@@ -36,6 +37,7 @@ class StandaloneRouting extends Component {
       const token = query.authToken;
       const username = query.username;
       const isMultipleMode = query.isMultipleMode === 'true';
+      const isDualViewportMode = query.isDualViewportMode === 'true';
 
       if (!url) {
         return reject(new Error('No URL was specified. Use ?url=$yourURL'));
@@ -76,6 +78,7 @@ class StandaloneRouting extends Component {
               studies: data.studies,
               studyInstanceUIDs: [],
               isMultipleMode,
+              isDualViewportMode,
             });
           }
         } catch (error) {
@@ -127,12 +130,15 @@ class StandaloneRouting extends Component {
 
           const adoptedMetadata = {
             ...naturalizedDicom,
+            ExamId: study.ExamId || naturalizedDicom.ExamId,
             PatientName: study.PatientName
               ? typeof study.PatientName === 'string'
                 ? { Alphabetic: study.PatientName }
                 : study.PatientName
               : naturalizedDicom.PatientName,
             PatientID: study.PatientID || naturalizedDicom.PatientID,
+            PatientSex: study.PatientSex || naturalizedDicom.PatientSex,
+            PatientAge: study.PatientAge || naturalizedDicom.PatientAge,
             StudyDate: study.StudyDate || naturalizedDicom.StudyDate,
             StudyTime: study.StudyTime || naturalizedDicom.StudyTime,
           };
@@ -164,6 +170,7 @@ class StandaloneRouting extends Component {
         studyInstanceUIDs,
         seriesInstanceUIDs,
         isMultipleMode,
+        isDualViewportMode,
       } = await this.parseQueryAndRetrieveDICOMWebData(query);
 
       if (studies) {
@@ -180,6 +187,7 @@ class StandaloneRouting extends Component {
         studyInstanceUIDs,
         seriesInstanceUIDs,
         isMultipleMode,
+        isDualViewportMode,
         loading: false,
       });
     } catch (error) {
@@ -200,6 +208,7 @@ class StandaloneRouting extends Component {
         <ConnectedViewer
           studies={this.state.studies}
           isMultipleMode={this.state.isMultipleMode}
+          isDualViewportMode={this.state.isDualViewportMode}
         />
       );
     } else {

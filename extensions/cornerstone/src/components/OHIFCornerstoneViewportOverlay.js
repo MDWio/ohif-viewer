@@ -74,11 +74,42 @@ class OHIFCornerstoneViewportOverlay extends PureComponent {
 
     const generalStudyModule =
       cornerstone.metaData.get('generalStudyModule', imageId) || {};
-    const { studyDate, studyTime, studyDescription } = generalStudyModule;
+    const {
+      studyDate,
+      studyTime,
+      studyDescription,
+      examId,
+      accessionNumber,
+    } = generalStudyModule;
+
+    const displayExamId = examId
+      ? `#${examId}`
+      : accessionNumber
+      ? accessionNumber
+      : '';
+
+    const formatPatientSex = sex => {
+      if (!sex) {
+        return '';
+      }
+
+      return sex
+        .toUpperCase()
+        .trim()
+        .charAt(0);
+    };
+
+    const formatPatientAge = age => {
+      if (!age) {
+        return '';
+      }
+
+      return age.replace(/^0+(\d)/, '$1');
+    };
 
     const patientModule =
       cornerstone.metaData.get('patientModule', imageId) || {};
-    const { patientId, patientName } = patientModule;
+    const { patientId, patientName, patientSex, patientAge } = patientModule;
 
     const generalImageModule =
       cornerstone.metaData.get('generalImageModule', imageId) || {};
@@ -215,8 +246,19 @@ class OHIFCornerstoneViewportOverlay extends PureComponent {
     const normal = (
       <React.Fragment>
         <div className="top-left overlay-element">
-          <div>{formatPN(patientName)}</div>
-          <div>{patientId}</div>
+          <div>
+            {displayExamId && (
+              <div className="exam-id">Exam {displayExamId}</div>
+            )}
+            {patientName && <div>Patient Name: {formatPN(patientName)}</div>}
+            {patientId && <div>Patient ID: {patientId}</div>}
+            {patientSex && (
+              <div>Patient Sex: {formatPatientSex(patientSex)} </div>
+            )}
+            {patientAge && (
+              <div>Patient Age: {formatPatientAge(patientAge)} </div>
+            )}
+          </div>
         </div>
         <div className="top-right overlay-element">
           <div>{studyDescription}</div>
