@@ -52,6 +52,9 @@ const mapStateToProps = (state, ownProps) => {
     frameRate = cine.cineFrameRate || frameRate;
   }
 
+  const isDualViewportMode =
+    state.viewerMode && state.viewerMode.isDualViewportMode;
+
   return {
     // layout: state.viewports.layout,
     isActive,
@@ -66,6 +69,7 @@ const mapStateToProps = (state, ownProps) => {
       : isActive,
     isPlaying,
     frameRate,
+    isDualViewportMode,
     //stack: viewportSpecificData.stack,
     // viewport: viewportSpecificData.viewport,
   };
@@ -150,12 +154,15 @@ const mapDispatchToProps = (dispatch, ownProps) => {
 
           setTimeout(() => {
             if (window.store) {
-              const isDualViewportMode = window.store.isDualViewportMode;
+              const state = window.store.getState();
+
+              const isDualViewportMode =
+                state.viewerMode && state.viewerMode.isDualViewportMode;
+
               if (!isDualViewportMode) {
                 return;
               }
 
-              const state = window.store.getState();
               const { preferences = {} } = state;
 
               const firstPreset =

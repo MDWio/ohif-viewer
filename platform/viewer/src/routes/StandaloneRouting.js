@@ -182,8 +182,11 @@ class StandaloneRouting extends Component {
         studyInstanceUIDs = updatedStudiesInstanceUIDs;
       }
 
-      if (window.store) {
-        window.store.isDualViewportMode = isDualViewportMode;
+      if (window.store && window.store.dispatch) {
+        window.store.dispatch({
+          type: 'SET_DUAL_VIEWPORT_MODE',
+          isDualViewportMode,
+        });
       }
 
       this.setState({

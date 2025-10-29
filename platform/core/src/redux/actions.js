@@ -11,6 +11,7 @@ import {
   SET_VIEWPORT_LAYOUT,
   SET_VIEWPORT_LAYOUT_AND_DATA,
   SET_USER_PREFERENCES,
+  SET_DUAL_VIEWPORT_MODE,
 } from './constants/ActionTypes.js';
 
 /**
@@ -110,6 +111,11 @@ export const setServers = servers => ({
   servers,
 });
 
+export const setDualViewportMode = isDualViewportMode => ({
+  type: SET_DUAL_VIEWPORT_MODE,
+  isDualViewportMode,
+});
+
 const actions = {
   /**
    * VIEWPORT
@@ -129,6 +135,7 @@ const actions = {
   setMeasurements,
   setStudyData,
   setServers,
+  setDualViewportMode,
 };
 
 export default actions;
