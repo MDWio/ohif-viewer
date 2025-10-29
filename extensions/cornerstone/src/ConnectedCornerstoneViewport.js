@@ -150,6 +150,11 @@ const mapDispatchToProps = (dispatch, ownProps) => {
 
           setTimeout(() => {
             if (window.store) {
+              const isDualViewportMode = window.store.isDualViewportMode;
+              if (!isDualViewportMode) {
+                return;
+              }
+
               const state = window.store.getState();
               const { preferences = {} } = state;
 
