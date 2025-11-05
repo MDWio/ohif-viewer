@@ -13,6 +13,8 @@ const { nameMap } = DicomMetaDictionary;
 
 const { metadataProvider } = OHIFCornerstone;
 
+const DATE_FORMAT = 'ddd, MMM Do YYYY';
+
 const DicomTagBrowser = ({ displaySets, displaySetInstanceUID }) => {
   const [
     activeDisplaySetInstanceUID,
@@ -48,12 +50,12 @@ const DicomTagBrowser = ({ displaySets, displaySetInstanceUID }) => {
           const dateStr = `${SeriesDate}:${SeriesTime}`.split('.')[0];
           const date = moment(dateStr, 'YYYYMMDD:HHmmss');
           if (date.isValid()) {
-            displayDate = date.format('ddd, MMM Do YYYY');
+            displayDate = date.format(DATE_FORMAT);
           }
         } else {
           const date = moment(SeriesDate, 'YYYYMMDD');
           if (date.isValid()) {
-            displayDate = date.format('ddd, MMM Do YYYY');
+            displayDate = date.format(DATE_FORMAT);
           }
         }
       }
