@@ -13,6 +13,8 @@ const { nameMap } = DicomMetaDictionary;
 
 const { metadataProvider } = OHIFCornerstone;
 
+const DATE_FORMAT = 'ddd, MMM Do YYYY';
+
 const DicomTagBrowser = ({ displaySets, displaySetInstanceUID }) => {
   const [
     activeDisplaySetInstanceUID,
@@ -41,13 +43,30 @@ const DicomTagBrowser = ({ displaySets, displaySetInstanceUID }) => {
       } = displaySet;
 
       /* Map to display representation */
-      const dateStr = `${SeriesDate}:${SeriesTime}`.split('.')[0];
-      const date = moment(dateStr, 'YYYYMMDD:HHmmss');
-      const displayDate = date.format('ddd, MMM Do YYYY');
+      let displayDate = '';
+
+      if (SeriesDate) {
+        if (SeriesTime) {
+          const dateStr = `${SeriesDate}:${SeriesTime}`.split('.')[0];
+          const date = moment(dateStr, 'YYYYMMDD:HHmmss');
+          if (date.isValid()) {
+            displayDate = date.format(DATE_FORMAT);
+          }
+        } else {
+          const date = moment(SeriesDate, 'YYYYMMDD');
+          if (date.isValid()) {
+            displayDate = date.format(DATE_FORMAT);
+          }
+        }
+      }
+
+      const title = SeriesDescription
+        ? `${SeriesNumber} (${Modality}): ${SeriesDescription}`
+        : `${SeriesNumber} (${Modality})`;
 
       return {
         value: displaySetInstanceUID,
-        title: `${SeriesNumber} (${Modality}): ${SeriesDescription}`,
+        title,
         description: displayDate,
         onClick: () => {
           setActiveDisplaySetInstanceUID(displaySetInstanceUID);
