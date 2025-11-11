@@ -423,10 +423,8 @@ const getContentSequence = (data, level = 1) => {
   const root = [];
   let keyCounter = 0;
 
-  // Handle ValueType entries (NUM, TEXT, CODE, PNAME, UIDREF, CONTAINER)
   if (data.ValueType) {
     if (data.ValueType === 'CONTAINER') {
-      // For containers, show header and process ContentSequence
       let header;
       if (data.ConceptNameCodeSequence) {
         const { CodeMeaning } = data.ConceptNameCodeSequence;
@@ -462,7 +460,6 @@ const getContentSequence = (data, level = 1) => {
         }
       }
     } else {
-      // For other value types (NUM, TEXT, CODE, PNAME, UIDREF), display the value
       const plainValue = getValueString(data);
       const header = getRelationshipString(data) + getMeaningString(data);
       if (plainValue) {
@@ -478,7 +475,6 @@ const getContentSequence = (data, level = 1) => {
       }
     }
   } else if (data.ContentSequence) {
-    // Handle ContentSequence without ValueType
     if (Array.isArray(data.ContentSequence)) {
       data.ContentSequence.forEach((item, index) => {
         root.push(
