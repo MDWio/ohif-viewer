@@ -27,9 +27,13 @@ function getRelationshipString(data) {
 
 const getMeaningString = data => {
   if (data.ConceptNameCodeSequence) {
-    const { CodeMeaning } = data.ConceptNameCodeSequence;
+    const conceptNameSequence = Array.isArray(data.ConceptNameCodeSequence)
+      ? data.ConceptNameCodeSequence[0]
+      : data.ConceptNameCodeSequence;
 
-    return `${CodeMeaning} = `;
+    const { CodeMeaning } = conceptNameSequence;
+
+    return `${CodeMeaning}`;
   }
 
   return '';
@@ -38,13 +42,19 @@ const getMeaningString = data => {
 function getValueString(data) {
   switch (data.ValueType) {
     case 'CODE':
-      const {
-        CodeMeaning,
-        CodeValue,
-        CodingSchemeDesignator,
-      } = data.ConceptNameCodeSequence;
+      const conceptCodeSequence = Array.isArray(data.ConceptCodeSequence)
+        ? data.ConceptCodeSequence[0]
+        : data.ConceptCodeSequence;
 
-      return `${CodeMeaning} (${CodeValue}, ${CodingSchemeDesignator})`;
+      if (conceptCodeSequence) {
+        const {
+          CodeMeaning,
+          CodeValue,
+          CodingSchemeDesignator,
+        } = conceptCodeSequence;
+        return `${CodeMeaning} (${CodeValue}, ${CodingSchemeDesignator})`;
+      }
+      return '';
 
     case 'PNAME':
       return data.PersonName;
@@ -57,10 +67,23 @@ function getValueString(data) {
 
     case 'NUM':
       const { MeasuredValueSequence } = data;
-      const numValue = MeasuredValueSequence.NumericValue;
-      const codeValue =
-        MeasuredValueSequence.MeasurementUnitsCodeSequence.CodeValue;
-      return `${numValue} ${codeValue}`;
+      if (MeasuredValueSequence && Array.isArray(MeasuredValueSequence)) {
+        const measuredValue = MeasuredValueSequence[0];
+        const numValue = measuredValue.NumericValue;
+        const unitsSequence = measuredValue.MeasurementUnitsCodeSequence;
+        if (unitsSequence && Array.isArray(unitsSequence)) {
+          const codeValue = unitsSequence[0].CodeValue;
+          const codeMeaning = unitsSequence[0].CodeMeaning;
+          return `${numValue} ${codeMeaning || codeValue}`;
+        }
+        return `${numValue}`;
+      } else if (MeasuredValueSequence) {
+        const numValue = MeasuredValueSequence.NumericValue;
+        const codeValue =
+          MeasuredValueSequence.MeasurementUnitsCodeSequence.CodeValue;
+        return `${numValue} ${codeValue || ''}`;
+      }
+      return '';
   }
 }
 
@@ -397,53 +420,109 @@ function getMainData(data) {
 }
 
 const getContentSequence = (data, level = 1) => {
-  let header;
-
-  if (data.ConceptNameCodeSequence) {
-    const { CodeMeaning } = data.ConceptNameCodeSequence;
-
-    header = `${CodeMeaning}`;
-  }
-
   const root = [];
-  // if (header) {
-  //   // const HeaderDynamicLevel = `h${Math.min(level, 6)}`;
+  let keyCounter = 0;
 
-  //   root.push(
-  //     <div className="sr-header" key={header}>
-  //       {header}
-  //     </div>
-  //   );
-  // }
+  // Handle ValueType entries (NUM, TEXT, CODE, PNAME, UIDREF, CONTAINER)
+  if (data.ValueType) {
+    if (data.ValueType === 'CONTAINER') {
+      // For containers, show header and process ContentSequence
+      let header;
+      if (data.ConceptNameCodeSequence) {
+        const { CodeMeaning } = data.ConceptNameCodeSequence;
+        header = `${CodeMeaning}`;
+      }
 
-  Object.keys(data).forEach(key => {
-    const value = data[key];
+      if (header) {
+        root.push(
+          <div
+            className="sr-header"
+            key={`header-${level}-${keyCounter++}-${header}`}
+          >
+            <nobr className="sr-header-color">{header}</nobr>
+          </div>
+        );
+      }
 
-    // if (key === '_meta') {
-    //   const HeaderDynamicLevel = `h3`;
-    //   root.push(<hr key={root.length} />);
-    //   root.push(
-    //     <HeaderDynamicLevel key="Metadata">
-    //       DICOM File Meta Information
-    //     </HeaderDynamicLevel>
-    //   );
-    // }
-
-    let content;
-    if (value instanceof Object) {
-      content = getContentSequence(value, level + 1);
+      if (data.ContentSequence) {
+        if (Array.isArray(data.ContentSequence)) {
+          data.ContentSequence.forEach((item, index) => {
+            root.push(
+              <div key={`content-${level}-${keyCounter++}-${index}`}>
+                {getContentSequence(item, level + 1)}
+              </div>
+            );
+          });
+        } else {
+          root.push(
+            <div key={`content-${level}-${keyCounter++}-single`}>
+              {getContentSequence(data.ContentSequence, level + 1)}
+            </div>
+          );
+        }
+      }
     } else {
-      if (key === 'TextValue') {
-        content = (
-          <div className="sr-header" key={header}>
-            <nobr className="sr-header-color">{header}: </nobr> {data[key]}
+      // For other value types (NUM, TEXT, CODE, PNAME, UIDREF), display the value
+      const plainValue = getValueString(data);
+      const header = getRelationshipString(data) + getMeaningString(data);
+      if (plainValue) {
+        root.push(
+          <div
+            className="sr-header"
+            key={`value-${level}-${keyCounter++}-${plainValue}`}
+          >
+            <nobr className="sr-title-field-color">{header}: </nobr>
+            {plainValue}
           </div>
         );
       }
     }
+  } else if (data.ContentSequence) {
+    // Handle ContentSequence without ValueType
+    if (Array.isArray(data.ContentSequence)) {
+      data.ContentSequence.forEach((item, index) => {
+        root.push(
+          <div key={`content-novalue-${level}-${keyCounter++}-${index}`}>
+            {getContentSequence(item, level + 1)}
+          </div>
+        );
+      });
+    } else {
+      root.push(
+        <div key={`content-novalue-${level}-${keyCounter++}-single`}>
+          {getContentSequence(data.ContentSequence, level + 1)}
+        </div>
+      );
+    }
+  } else {
+    // Fallback: iterate through all keys (original logic for non-SR standard data)
+    Object.keys(data).forEach(key => {
+      const value = data[key];
 
-    root.push(content);
-  });
+      let content;
+      if (value instanceof Object) {
+        content = getContentSequence(value, level + 1);
+      } else if (key === 'TextValue') {
+        content = (
+          <div
+            className="sr-header"
+            key={`text-${level}-${keyCounter++}-${key}`}
+          >
+            <nobr className="sr-header-color">
+              {data.ConceptNameCodeSequence.CodeMeaning}:{' '}
+            </nobr>{' '}
+            {data[key]}
+          </div>
+        );
+      }
+
+      if (content) {
+        root.push(
+          <div key={`obj-${level}-${keyCounter++}-${key}`}>{content}</div>
+        );
+      }
+    });
+  }
 
   return <div>{root}</div>;
 };
