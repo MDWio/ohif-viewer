@@ -103,8 +103,7 @@ const OpenSearchTagsTab = ({
         setError('Failed to load suggested tags: ' + err.message);
         setIsLoading(false);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [studyInstanceUID, urlJsonData]);
 
   const handleTagToggle = tag => {
     if (selectedTags.includes(tag)) {

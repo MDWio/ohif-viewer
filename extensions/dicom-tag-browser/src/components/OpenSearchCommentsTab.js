@@ -65,7 +65,10 @@ const OpenSearchCommentsTab = ({
           if (studyIndex >= 0 && studyIndex < idArray.length) {
             studyId = idArray[studyIndex];
           } else {
-            studyId = ids;
+            log.error(
+              `Study index ${studyIndex} is out of bounds for OpenSearch IDs array (length ${idArray.length}) in OpenSearchCommentsTab`
+            );
+            studyId = null;
           }
         } else {
           studyId = ids;
