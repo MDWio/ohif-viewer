@@ -33,7 +33,7 @@ const getMeaningString = data => {
 
     const { CodeMeaning } = conceptNameSequence;
 
-    return `${CodeMeaning}`;
+    return CodeMeaning;
   }
 
   return '';
