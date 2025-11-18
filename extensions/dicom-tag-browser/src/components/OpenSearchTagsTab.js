@@ -170,6 +170,7 @@ const OpenSearchTagsTab = ({
 
       setIsLoading(false);
       setTags(selectedTags);
+      setOriginalTags([...selectedTags]);
       log.info('Tags successfully saved:', tags, '->', selectedTags);
 
       studyData.Tags = selectedTags;
