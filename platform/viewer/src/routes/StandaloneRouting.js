@@ -43,6 +43,8 @@ class StandaloneRouting extends Component {
         return reject(new Error('No URL was specified. Use ?url=$yourURL'));
       }
 
+      this.parseOpenSearchConfigFromUrl(url, username);
+
       const oReq = new XMLHttpRequest();
 
       oReq.addEventListener('error', error => {
@@ -111,6 +113,37 @@ class StandaloneRouting extends Component {
 
       oReq.send();
     });
+  }
+
+  parseOpenSearchConfigFromUrl(url, username) {
+    try {
+      const urlObj = new URL(url);
+      const ids = urlObj.searchParams.get('ids');
+      const index = urlObj.searchParams.get('index');
+      const openSearchKey = urlObj.searchParams.get('openSearchKey');
+
+      if (ids && index && openSearchKey) {
+        const openSearchConfig = {
+          baseUrl: `${urlObj.protocol}//${urlObj.host}`,
+          ids,
+          index,
+          openSearchKey,
+        };
+
+        window.config = {
+          ...window.config,
+          s3GatewayUrl: openSearchConfig.baseUrl,
+          openSearchApiKey: openSearchConfig.openSearchKey,
+          openSearchId: openSearchConfig.ids,
+          openSearchIndex: openSearchConfig.index,
+          username: username,
+        };
+      }
+
+      log.info('OpenSearch configuration parsed from URL parameters');
+    } catch {
+      // not an OpenSearch URL or parse error
+    }
   }
 
   fillMetadata(data) {

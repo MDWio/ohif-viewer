@@ -1,0 +1,42 @@
+.tag-browser-tabs {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.tab-headers {
+  display: flex;
+  border-bottom: 1px solid #333;
+  background: #1a1a1a;
+}
+
+.tab-header {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #888;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.tab-header:hover {
+  color: #e0e0e0;
+  background: #252525;
+}
+
+.tab-header.active {
+  color: #5acce6;
+  border-bottom-color: #5acce6;
+}
+
+.tab-content {
+  flex: 1;
+  overflow: auto;
+}
+
+.tab-pane {
+  height: 100%;
+}
