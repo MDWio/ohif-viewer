@@ -12,25 +12,11 @@ const httpRequestToS3Gateway = (apiUrl, body) => {
     }
   };
 
-  const getOpenSearchApiKey = () => {
-    if (window.config && window.config.openSearchApiKey) {
-      return window.config.openSearchApiKey;
-    }
-  };
-
-  const getUsername = () => {
-    if (window.config && window.config.username) {
-      return window.config.username;
-    }
-  };
-
   const baseUrl = getS3GatewayUrl();
-  const apiKey = getOpenSearchApiKey();
-  const username = getUsername();
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const url = `${baseUrl}${apiUrl}?openSearchKey=${apiKey}`;
+    const url = `${baseUrl}${apiUrl}`;
 
     xhr.addEventListener('error', () => {
       reject(
@@ -48,11 +34,19 @@ const httpRequestToS3Gateway = (apiUrl, body) => {
       }
 
       if (xhr.status === 401) {
-        reject(
-          new Error(
-            'Authentication failed. Please verify that valid OPENSEARCH API token and username are provided.'
-          )
-        );
+        let authErrorMessage =
+          'Authentication failed. Please verify that you are logged into OpenSearch Dashboards and have proper permissions.';
+
+        try {
+          const parsedResponse = JSON.parse(xhr.responseText);
+          if (parsedResponse.message) {
+            authErrorMessage = parsedResponse.message;
+          }
+        } catch (parseError) {
+          // Use default message if parsing fails
+        }
+
+        reject(new Error(authErrorMessage));
 
         return;
       }
@@ -88,7 +82,9 @@ const httpRequestToS3Gateway = (apiUrl, body) => {
     xhr.open('POST', url);
     xhr.setRequestHeader('Accept', 'application/json');
     xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
-    xhr.setRequestHeader('x-username', username);
+
+    // Include credentials to send cookies automatically
+    xhr.withCredentials = true;
 
     xhr.send(body ? JSON.stringify(body) : undefined);
   });

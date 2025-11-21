@@ -1,5 +1,5 @@
 window.config = {
-  routerBasename: '/',
+  routerBasename: window.PUBLIC_URL || './',
   extensions: [],
   showStudyList: false,
   filterQueryParam: false,

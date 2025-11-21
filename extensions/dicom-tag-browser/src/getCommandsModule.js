@@ -114,7 +114,6 @@ function checkIfOpenSearchEnabled() {
   return !!(
     window.config &&
     window.config.openSearchId &&
-    window.config.openSearchIndex &&
-    window.config.openSearchApiKey
+    window.config.openSearchIndex
   );
 }
