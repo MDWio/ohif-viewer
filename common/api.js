@@ -5,6 +5,27 @@ const ES3GatewayApiUrl = {
   OPENSEARCH_JSON_GET: '/api/opensearch/json/get',
 };
 
+const parseErrorResponse = (responseText, statusCode, defaultMessage) => {
+  let errorMessage = defaultMessage;
+
+  try {
+    if (responseText) {
+      const errorData = JSON.parse(responseText);
+      if (errorData.message) {
+        errorMessage = errorData.message;
+      }
+    }
+  } catch (parseError) {
+    // If parsing fails, use the default message
+  }
+
+  if (statusCode === 401) {
+    errorMessage = 'Authentication failed: ' + errorMessage;
+  }
+
+  return errorMessage;
+};
+
 const httpRequestToS3Gateway = (apiUrl, body) => {
   const getS3GatewayUrl = () => {
     if (window.config && window.config.s3GatewayUrl) {
@@ -34,17 +55,11 @@ const httpRequestToS3Gateway = (apiUrl, body) => {
       }
 
       if (xhr.status === 401) {
-        let authErrorMessage =
-          'Authentication failed. Please verify that you are logged into OpenSearch Dashboards and have proper permissions.';
-
-        try {
-          const parsedResponse = JSON.parse(xhr.responseText);
-          if (parsedResponse.message) {
-            authErrorMessage = parsedResponse.message;
-          }
-        } catch (parseError) {
-          // Use default message if parsing fails
-        }
+        const authErrorMessage = parseErrorResponse(
+          xhr.responseText,
+          401,
+          'Please verify that you are logged into OpenSearch Dashboards and have proper permissions.'
+        );
 
         reject(new Error(authErrorMessage));
 
@@ -90,4 +105,4 @@ const httpRequestToS3Gateway = (apiUrl, body) => {
   });
 };
 
-export { ES3GatewayApiUrl, httpRequestToS3Gateway };
+export { ES3GatewayApiUrl, httpRequestToS3Gateway, parseErrorResponse };

@@ -4,6 +4,7 @@ import React, { Component } from 'react';
 import OHIF from '@ohif/core';
 import PropTypes from 'prop-types';
 import qs from 'querystring';
+import { parseErrorResponse } from '../../../../common/api';
 
 import { extensionManager } from './../App.js';
 import ConnectedViewer from '../connectedComponents/ConnectedViewer';
@@ -52,22 +53,11 @@ class StandaloneRouting extends Component {
 
       oReq.addEventListener('load', async event => {
         if (event.target.status !== 201 && event.target.status !== 200) {
-          let errorMessage = 'Failed to retrieve data from S3 gateway';
-
-          try {
-            if (oReq.responseText) {
-              const errorData = JSON.parse(oReq.responseText);
-              if (errorData.message) {
-                errorMessage = errorData.message;
-              }
-            }
-          } catch (parseError) {
-            // If parsing fails, use the default message
-          }
-
-          if (event.target.status === 401) {
-            errorMessage = 'Authentication failed: ' + errorMessage;
-          }
+          const errorMessage = parseErrorResponse(
+            oReq.responseText,
+            event.target.status,
+            'Failed to retrieve data from S3 gateway'
+          );
 
           reject(new Error(errorMessage));
         }
