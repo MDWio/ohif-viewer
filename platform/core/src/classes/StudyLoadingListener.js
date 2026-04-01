@@ -139,7 +139,7 @@ class DICOMFileLoadingListener extends BaseLoadingListener {
 
     cornerstone.events.addEventListener(
       imageLoadProgressEventName,
-      this.imageLoadProgressEventHandle
+      this.imageLoadProgressEventHandler
     );
   }
 
@@ -147,7 +147,7 @@ class DICOMFileLoadingListener extends BaseLoadingListener {
     const imageLoadProgressEventName = this._getImageLoadProgressEventName();
     cornerstone.events.removeEventListener(
       imageLoadProgressEventName,
-      this.imageLoadProgressEventHandle
+      this.imageLoadProgressEventHandler
     );
   }
 
