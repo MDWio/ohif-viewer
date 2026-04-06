@@ -283,6 +283,13 @@ class MetadataProvider {
         };
         break;
       case WADO_IMAGE_LOADER_TAGS.IMAGE_PIXEL_MODULE:
+        if (
+          instance.PhotometricInterpretation === 'PALETTE COLOR' &&
+          !instance.RedPaletteColorLookupTableData
+        ) {
+          return undefined;
+        }
+
         metadata = {
           samplesPerPixel: instance.SamplesPerPixel,
           photometricInterpretation: instance.PhotometricInterpretation,
