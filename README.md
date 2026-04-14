@@ -168,7 +168,7 @@ also supports a number of commands that can be found in their respective
 | Yarn Commands                | Description                                                   |
 | ---------------------------- | ------------------------------------------------------------- |
 | **Develop**                  |                                                               |
-| `dev`, `dev:osd` or `start`  | Default development experience for Viewer                     |
+| `dev` or `start`             | Default development experience for Viewer                     |
 | `dev:project <package-name>` | Replace with `core`, `ui`, `i18n`, `cornerstone`, `vtk`, etc. |
 | `test:unit`                  | Jest multi-project test runner; overall coverage              |
 | **Deploy**                   |                                                               |
@@ -275,15 +275,18 @@ development of OHIF Viewer:
   version of the OHIF Viewer.
 
 ### Research notice
+
 Please note that this repository is participating in a study into sustainability
- of open source projects. Data will be gathered about this repository for
- approximately the next 12 months, starting from June 2021.
+of open source projects. Data will be gathered about this repository for
+approximately the next 12 months, starting from June 2021.
 
 Data collected will include number of contributors, number of PRs, time taken to
- close/merge these PRs, and issues closed.
+close/merge these PRs, and issues closed.
 
 For more information, please visit
-[our informational page](https://sustainable-open-science-and-software.github.io/) or download our [participant information sheet](https://sustainable-open-science-and-software.github.io/assets/PIS_sustainable_software.pdf).
+[our informational page](https://sustainable-open-science-and-software.github.io/)
+or download our
+[participant information sheet](https://sustainable-open-science-and-software.github.io/assets/PIS_sustainable_software.pdf).
 
 ## License
 

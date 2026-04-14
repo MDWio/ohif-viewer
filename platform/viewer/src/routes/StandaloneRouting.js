@@ -119,7 +119,7 @@ class StandaloneRouting extends Component {
 
   parseOpenSearchConfigFromUrl(url) {
     try {
-      const urlObj = new URL(url);
+      const urlObj = new URL(url, window.location.origin);
       const ids = urlObj.searchParams.get('ids');
       const index = urlObj.searchParams.get('index');
 
