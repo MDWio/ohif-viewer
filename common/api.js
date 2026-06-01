@@ -5,6 +5,27 @@ const ES3GatewayApiUrl = {
   OPENSEARCH_JSON_GET: '/api/opensearch/json/get',
 };
 
+const parseErrorResponse = (responseText, statusCode, defaultMessage) => {
+  let errorMessage = defaultMessage;
+
+  try {
+    if (responseText) {
+      const errorData = JSON.parse(responseText);
+      if (errorData.message) {
+        errorMessage = errorData.message;
+      }
+    }
+  } catch (parseError) {
+    // If parsing fails, use the default message
+  }
+
+  if (statusCode === 401) {
+    errorMessage = 'Authentication failed: ' + errorMessage;
+  }
+
+  return errorMessage;
+};
+
 const httpRequestToS3Gateway = (apiUrl, body) => {
   const getS3GatewayUrl = () => {
     if (window.config && window.config.s3GatewayUrl) {
@@ -12,25 +33,11 @@ const httpRequestToS3Gateway = (apiUrl, body) => {
     }
   };
 
-  const getOpenSearchApiKey = () => {
-    if (window.config && window.config.openSearchApiKey) {
-      return window.config.openSearchApiKey;
-    }
-  };
-
-  const getUsername = () => {
-    if (window.config && window.config.username) {
-      return window.config.username;
-    }
-  };
-
   const baseUrl = getS3GatewayUrl();
-  const apiKey = getOpenSearchApiKey();
-  const username = getUsername();
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const url = `${baseUrl}${apiUrl}?openSearchKey=${apiKey}`;
+    const url = `${baseUrl}${apiUrl}`;
 
     xhr.addEventListener('error', () => {
       reject(
@@ -48,11 +55,13 @@ const httpRequestToS3Gateway = (apiUrl, body) => {
       }
 
       if (xhr.status === 401) {
-        reject(
-          new Error(
-            'Authentication failed. Please verify that valid OPENSEARCH API token and username are provided.'
-          )
+        const authErrorMessage = parseErrorResponse(
+          xhr.responseText,
+          401,
+          'Please verify that you are logged into OpenSearch Dashboards and have proper permissions.'
         );
+
+        reject(new Error(authErrorMessage));
 
         return;
       }
@@ -88,10 +97,12 @@ const httpRequestToS3Gateway = (apiUrl, body) => {
     xhr.open('POST', url);
     xhr.setRequestHeader('Accept', 'application/json');
     xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
-    xhr.setRequestHeader('x-username', username);
+
+    // Include credentials to send cookies automatically
+    xhr.withCredentials = true;
 
     xhr.send(body ? JSON.stringify(body) : undefined);
   });
 };
 
-export { ES3GatewayApiUrl, httpRequestToS3Gateway };
+export { ES3GatewayApiUrl, httpRequestToS3Gateway, parseErrorResponse };

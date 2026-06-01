@@ -4,6 +4,7 @@ import React, { Component } from 'react';
 import OHIF from '@ohif/core';
 import PropTypes from 'prop-types';
 import qs from 'querystring';
+import { parseErrorResponse } from '../../../../common/api';
 
 import { extensionManager } from './../App.js';
 import ConnectedViewer from '../connectedComponents/ConnectedViewer';
@@ -34,8 +35,6 @@ class StandaloneRouting extends Component {
     return new Promise((resolve, reject) => {
       const url = query.url;
 
-      const token = query.authToken;
-      const username = query.username;
       const isMultipleMode = query.isMultipleMode === 'true';
       const isDualViewportMode = query.isDualViewportMode === 'true';
 
@@ -43,7 +42,7 @@ class StandaloneRouting extends Component {
         return reject(new Error('No URL was specified. Use ?url=$yourURL'));
       }
 
-      this.parseOpenSearchConfigFromUrl(url, username);
+      this.parseOpenSearchConfigFromUrl(url);
 
       const oReq = new XMLHttpRequest();
 
@@ -54,7 +53,13 @@ class StandaloneRouting extends Component {
 
       oReq.addEventListener('load', async event => {
         if (event.target.status !== 201 && event.target.status !== 200) {
-          reject(new Error('Failed to retrieve data from S3 gateway'));
+          const errorMessage = parseErrorResponse(
+            oReq.responseText,
+            event.target.status,
+            'Failed to retrieve data from S3 gateway'
+          );
+
+          reject(new Error(errorMessage));
         }
 
         if (!oReq.responseText) {
@@ -91,22 +96,19 @@ class StandaloneRouting extends Component {
 
       log.info(`Sending Request to: ${url}`);
 
+      // Set withCredentials to send cookies for authentication
+      oReq.withCredentials = true;
+
       // Required for OpenSearch Dashboards
-      if (username) {
+      if (
+        window.config &&
+        window.config.openSearchId &&
+        window.config.openSearchIndex
+      ) {
         oReq.open('POST', url);
-        oReq.setRequestHeader('x-username', username);
       } else {
         // Required for Marketplace
-        if (!token) {
-          // Cookie workflow
-          oReq.withCredentials = true;
-        }
-
         oReq.open('GET', url);
-
-        if (token) {
-          oReq.setRequestHeader('Authorization', 'Basic ' + token);
-        }
       }
 
       oReq.setRequestHeader('Accept', 'application/json');
@@ -115,28 +117,24 @@ class StandaloneRouting extends Component {
     });
   }
 
-  parseOpenSearchConfigFromUrl(url, username) {
+  parseOpenSearchConfigFromUrl(url) {
     try {
-      const urlObj = new URL(url);
+      const urlObj = new URL(url, window.location.origin);
       const ids = urlObj.searchParams.get('ids');
       const index = urlObj.searchParams.get('index');
-      const openSearchKey = urlObj.searchParams.get('openSearchKey');
 
-      if (ids && index && openSearchKey) {
+      if (ids && index) {
         const openSearchConfig = {
           baseUrl: `${urlObj.protocol}//${urlObj.host}`,
           ids,
           index,
-          openSearchKey,
         };
 
         window.config = {
           ...window.config,
           s3GatewayUrl: openSearchConfig.baseUrl,
-          openSearchApiKey: openSearchConfig.openSearchKey,
           openSearchId: openSearchConfig.ids,
           openSearchIndex: openSearchConfig.index,
-          username: username,
         };
       }
 
