@@ -15,3 +15,42 @@ ToolbarRow.expanded {
     height: calc(var(--toolbar-height) + var(--toolbar-drawer-height));
 }
 
+.ToolbarRow-disclaimer {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 8px;
+    margin-left: auto;
+    padding-left: 16px;
+    color: #f5c518;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.ToolbarRow-disclaimer svg {
+    width: 22px;
+    height: 22px;
+}
+
+@media only screen and (max-width: 1400px) {
+    .ToolbarRow-disclaimer {
+        gap: 6px;
+        padding-left: 8px;
+        font-size: 12px;
+        letter-spacing: 0;
+    }
+
+    .ToolbarRow-disclaimer svg {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+/* Too narrow for usable image review */
+@media only screen and (max-width: 900px) {
+    .ToolbarRow-disclaimer {
+        display: none;
+    }
+}

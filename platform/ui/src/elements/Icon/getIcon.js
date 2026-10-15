@@ -38,6 +38,7 @@ import fastBackward from './icons/fast-backward.svg';
 import fastForward from './icons/fast-forward.svg';
 import stop from './icons/stop.svg';
 import info from './icons/info.svg';
+import infoCircle from './icons/info-circle.svg';
 import inlineEdit from './icons/inline-edit.svg';
 import level from './icons/level.svg';
 import link from './icons/link.svg';
@@ -103,6 +104,7 @@ const ICONS = {
   sphere,
   'sort-down': sortDown,
   info,
+  'info-circle': infoCircle,
   cube,
   crosshairs,
   'dot-circle': dotCircle,
