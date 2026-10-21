@@ -6,6 +6,7 @@ import { UserPreferences } from '../components/UserPreferences/UserPreferences';
 import { MODULE_TYPES } from '@ohif/core';
 import {
   ExpandableToolMenu,
+  Icon,
   RoundedButtonGroup,
   ToolbarButton,
   withModal,
@@ -240,6 +241,10 @@ class ToolbarRow extends Component {
             onClick={this.handleOpenUserPreferences}
           />
           {!this.props.isMultipleMode && <ConnectedLayoutButton />}
+          <div className="ToolbarRow-disclaimer" role="note">
+            <Icon name="info-circle" aria-hidden="true" />
+            <span>NOT FOR DIAGNOSTIC USE</span>
+          </div>
           {/* <div
             className="pull-right m-t-1 rm-x-1"
             style={{ marginLeft: 'auto' }}
