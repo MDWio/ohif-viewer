@@ -12,7 +12,7 @@ import thunkMiddleware from 'redux-thunk';
 
 // Combine our @ohif/core and oidc reducers
 // Set init data, using values found in localStorage
-const { reducers, localStorage, sessionStorage } = redux;
+const { reducers, localStorage, sessionStorage, migratePreferences } = redux;
 const middleware = [thunkMiddleware];
 const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 
@@ -23,6 +23,10 @@ const preloadedState = {
   ...localStorage.loadState(),
   ...sessionStorage.loadState(),
 };
+
+if (preloadedState.preferences) {
+  preloadedState.preferences = migratePreferences(preloadedState.preferences);
+}
 
 if (window.config && window.config.disableServersCache === true) {
   delete preloadedState.servers;
