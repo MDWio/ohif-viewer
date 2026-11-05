@@ -321,6 +321,17 @@ class MetadataProvider {
       case WADO_IMAGE_LOADER_TAGS.VOI_LUT_MODULE:
         let { WindowCenter, WindowWidth } = instance;
 
+        // Return nothing when the tags are absent so cornerstone falls through
+        // to the image loader provider, which reads the actual DICOM header.
+        if (
+          WindowCenter === undefined ||
+          WindowWidth === undefined ||
+          WindowCenter === '' ||
+          WindowWidth === ''
+        ) {
+          return;
+        }
+
         const windowCenter = Array.isArray(WindowCenter)
           ? WindowCenter
           : [WindowCenter];
@@ -335,6 +346,16 @@ class MetadataProvider {
 
         break;
       case WADO_IMAGE_LOADER_TAGS.MODALITY_LUT_MODULE:
+        // Without these tags (often missing from QIDO/series metadata) an
+        // empty module would shadow the loader's header values and drop the
+        // rescale intercept.
+        if (
+          instance.RescaleIntercept === undefined &&
+          instance.RescaleSlope === undefined
+        ) {
+          return;
+        }
+
         const rescaleSlope = validNumber(instance.RescaleSlope);
         const rescaleIntercept = validNumber(instance.RescaleIntercept);
         metadata = {
