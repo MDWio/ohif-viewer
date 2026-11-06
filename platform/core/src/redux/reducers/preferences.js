@@ -1,8 +1,40 @@
+// Ordered list of migrations for persisted preferences. To change a factory
+// preset in the future, update defaultState and append a migration here; the
+// stored presetsVersion tells which ones a given user still needs.
+const presetMigrations = [
+  {
+    version: 1,
+    // Lung factory preset was W 150 / L -600; now W 1500 / L -600
+    // Matched by content, not slot: older stored layouts have different slots
+    migrate: windowLevelData => {
+      const migrated = {};
+
+      for (const [slot, preset] of Object.entries(windowLevelData)) {
+        const isUnmodifiedFactory =
+          preset &&
+          preset.description === 'Lung' &&
+          String(preset.window) === '150' &&
+          String(preset.level) === '-600';
+
+        migrated[slot] = isUnmodifiedFactory
+          ? { ...preset, window: '1500' }
+          : preset;
+      }
+
+      return migrated;
+    },
+  },
+];
+
+const CURRENT_PRESETS_VERSION =
+  presetMigrations[presetMigrations.length - 1].version;
+
 const defaultState = {
+  presetsVersion: CURRENT_PRESETS_VERSION,
   windowLevelData: {
     1: { description: 'ST1', window: '664', level: '1165' },
     2: { description: 'Soft tissue', window: '550', level: '40' },
-    3: { description: 'Lung', window: '150', level: '-600' },
+    3: { description: 'Lung', window: '1500', level: '-600' },
     4: { description: 'Liver', window: '150', level: '90' },
     5: { description: 'Bone', window: '2500', level: '480' },
     6: { description: 'Brain', window: '80', level: '40' },
@@ -16,6 +48,34 @@ const defaultState = {
   },
 };
 
+/**
+ * Applies pending window level preset migrations to persisted preferences,
+ * keeping any user customization intact.
+ */
+const migratePreferences = preferences => {
+  const storedVersion = (preferences && preferences.presetsVersion) || 0;
+
+  if (!preferences || storedVersion >= CURRENT_PRESETS_VERSION) {
+    return preferences;
+  }
+
+  let windowLevelData = preferences.windowLevelData;
+
+  if (windowLevelData) {
+    for (const { version, migrate } of presetMigrations) {
+      if (version > storedVersion) {
+        windowLevelData = migrate(windowLevelData);
+      }
+    }
+  }
+
+  return {
+    ...preferences,
+    ...(windowLevelData && { windowLevelData }),
+    presetsVersion: CURRENT_PRESETS_VERSION,
+  };
+};
+
 const preferences = (state = defaultState, action) => {
   switch (action.type) {
     case 'SET_USER_PREFERENCES': {
@@ -26,5 +86,5 @@ const preferences = (state = defaultState, action) => {
   }
 };
 
-export { defaultState };
+export { defaultState, migratePreferences };
 export default preferences;
