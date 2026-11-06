@@ -323,12 +323,7 @@ class MetadataProvider {
 
         // Return nothing when the tags are absent so cornerstone falls through
         // to the image loader provider, which reads the actual DICOM header.
-        if (
-          WindowCenter === undefined ||
-          WindowWidth === undefined ||
-          WindowCenter === '' ||
-          WindowWidth === ''
-        ) {
+        if (isEmpty(WindowCenter) || isEmpty(WindowWidth)) {
           return;
         }
 
@@ -350,8 +345,8 @@ class MetadataProvider {
         // empty module would shadow the loader's header values and drop the
         // rescale intercept.
         if (
-          instance.RescaleIntercept === undefined &&
-          instance.RescaleSlope === undefined
+          isEmpty(instance.RescaleIntercept) ||
+          isEmpty(instance.RescaleSlope)
         ) {
           return;
         }
@@ -570,3 +565,9 @@ const WADO_IMAGE_LOADER_TAGS = {
 };
 
 const INSTANCE = 'instance';
+
+const isEmpty = value =>
+  value === undefined ||
+  value === null ||
+  value === '' ||
+  (Array.isArray(value) && value.length === 0);
