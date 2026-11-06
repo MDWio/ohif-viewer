@@ -44,6 +44,20 @@ describe('preferences reducer', () => {
       expect(result.presetsVersion).toBe(defaultState.presetsVersion);
     });
 
+    it('migrates Lung stored in a different slot (older layout)', () => {
+      const result = migratePreferences({
+        windowLevelData: {
+          1: { description: 'Soft tissue', window: '550', level: '40' },
+          2: { description: 'Lung', window: '150', level: '-600' },
+          3: { description: 'Liver', window: '150', level: '90' },
+        },
+        generalPreferences: {},
+      });
+
+      expect(result.windowLevelData[2].window).toBe('1500');
+      expect(result.windowLevelData[3].window).toBe('150');
+    });
+
     it('keeps customized Lung presets', () => {
       const custom = { description: 'Lung', window: '1200', level: '-500' };
       const result = migratePreferences(legacy(custom));

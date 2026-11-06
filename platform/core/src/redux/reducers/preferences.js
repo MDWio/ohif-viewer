@@ -5,17 +5,23 @@ const presetMigrations = [
   {
     version: 1,
     // Lung factory preset was W 150 / L -600; now W 1500 / L -600
+    // Matched by content, not slot: older stored layouts have different slots
     migrate: windowLevelData => {
-      const lung = windowLevelData[3];
-      const isUnmodifiedFactory =
-        lung &&
-        lung.description === 'Lung' &&
-        String(lung.window) === '150' &&
-        String(lung.level) === '-600';
+      const migrated = {};
 
-      return isUnmodifiedFactory
-        ? { ...windowLevelData, 3: { ...lung, window: '1500' } }
-        : windowLevelData;
+      for (const [slot, preset] of Object.entries(windowLevelData)) {
+        const isUnmodifiedFactory =
+          preset &&
+          preset.description === 'Lung' &&
+          String(preset.window) === '150' &&
+          String(preset.level) === '-600';
+
+        migrated[slot] = isUnmodifiedFactory
+          ? { ...preset, window: '1500' }
+          : preset;
+      }
+
+      return migrated;
     },
   },
 ];
