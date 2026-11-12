@@ -22,6 +22,51 @@
     &::-webkit-scrollbar
       display: none
 
+    .study-header
+      color: #91b9cd
+      font-size: 14px
+      box-sizing: border-box
+      align-self: stretch
+      padding: 4px 16px 8px
+      margin: 0 0 12px
+      border-bottom: 1px solid #3a3f99
+      display: flex
+      flex-direction: column
+
+      .study-header-line
+        position: relative
+
+        &:hover::after
+          content: attr(data-tooltip)
+          position: absolute
+          top: 100%
+          left: 0
+          right: 0
+          z-index: 10
+          padding: 6px 8px
+          background: #0b1a42
+          border: 1px solid #3a3f99
+          border-radius: 4px
+          color: #fff
+          font-size: 12px
+          font-weight: normal
+          white-space: pre-line
+          word-break: break-word
+
+      .study-header-text
+        font-weight: bold
+
+        span
+          display: block
+          white-space: normal
+          word-break: break-word
+
+      .study-header-uid
+        color: rgba(145, 185, 205, 0.7)
+        margin-top: 4px
+        font-size: 12px
+        word-break: break-all
+
     .thumbnail-container
       margin: 0 auto;
       padding-bottom: 1.5rem;

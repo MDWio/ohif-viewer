@@ -959,7 +959,7 @@ const _isDisplaySetActive = function(
  */
 const _mapStudiesToThumbnails = function(studies, activeDisplaySetInstanceUID) {
   return studies.map(study => {
-    const { StudyInstanceUID } = study;
+    const { StudyInstanceUID, StudyDescription, StudyDate } = study;
     const thumbnails = study.displaySets.map(displaySet => {
       const {
         displaySetInstanceUID,
@@ -1010,6 +1010,8 @@ const _mapStudiesToThumbnails = function(studies, activeDisplaySetInstanceUID) {
 
     return {
       StudyInstanceUID,
+      StudyDescription,
+      StudyDate,
       thumbnails,
     };
   });

@@ -18,64 +18,107 @@ function StudyBrowser(props) {
         {studies
           .map((study, studyIndex) => {
             const { StudyInstanceUID } = study;
-            return study.thumbnails.map((thumb, thumbIndex) => {
-              // TODO: Thumb has more props than we care about?
-              const {
-                active,
-                altImageText,
-                displaySetInstanceUID,
-                imageId,
-                derivedDisplaySetsNumber,
-                numImageFrames,
-                SeriesDescription,
-                SeriesNumber,
-                hasWarnings,
-                hasDerivedDisplaySets,
-              } = thumb;
+            const header =
+              studies.length > 1 ? getStudyHeader(study, studyIndex) : null;
+            const thumbnailElements = study.thumbnails.map(
+              (thumb, thumbIndex) => {
+                // TODO: Thumb has more props than we care about?
+                const {
+                  active,
+                  altImageText,
+                  displaySetInstanceUID,
+                  imageId,
+                  derivedDisplaySetsNumber,
+                  numImageFrames,
+                  SeriesDescription,
+                  SeriesNumber,
+                  hasWarnings,
+                  hasDerivedDisplaySets,
+                } = thumb;
 
-              if (altImageText === 'GrayscaleSoftcopyPresentationState') {
-                return;
+                if (altImageText === 'GrayscaleSoftcopyPresentationState') {
+                  return;
+                }
+
+                return (
+                  <div
+                    key={thumb.displaySetInstanceUID}
+                    className="thumbnail-container"
+                    data-cy="thumbnail-list"
+                  >
+                    <Thumbnail
+                      active={active}
+                      supportsDrag={supportsDrag}
+                      key={`${studyIndex}_${thumbIndex}`}
+                      id={`${studyIndex}_${thumbIndex}`} // Unused?
+                      // Study
+                      StudyInstanceUID={StudyInstanceUID} // used by drop
+                      // Thumb
+                      altImageText={altImageText}
+                      imageId={imageId}
+                      derivedDisplaySetsNumber={derivedDisplaySetsNumber}
+                      displaySetInstanceUID={displaySetInstanceUID} // used by drop
+                      numImageFrames={numImageFrames}
+                      SeriesDescription={SeriesDescription}
+                      SeriesNumber={SeriesNumber}
+                      hasWarnings={hasWarnings}
+                      hasDerivedDisplaySets={hasDerivedDisplaySets}
+                      // Events
+                      onClick={onThumbnailClick.bind(
+                        undefined,
+                        displaySetInstanceUID
+                      )}
+                      onDoubleClick={onThumbnailDoubleClick}
+                      showProgressBar={showThumbnailProgressBar}
+                    />
+                  </div>
+                );
               }
+            );
 
-              return (
+            if (!header) {
+              return thumbnailElements;
+            }
+
+            return [
+              <div
+                key={`header_${StudyInstanceUID}`}
+                className="study-header"
+                data-cy="study-header"
+              >
                 <div
-                  key={thumb.displaySetInstanceUID}
-                  className="thumbnail-container"
-                  data-cy="thumbnail-list"
+                  className="study-header-line study-header-text"
+                  data-tooltip={header.textTooltip}
                 >
-                  <Thumbnail
-                    active={active}
-                    supportsDrag={supportsDrag}
-                    key={`${studyIndex}_${thumbIndex}`}
-                    id={`${studyIndex}_${thumbIndex}`} // Unused?
-                    // Study
-                    StudyInstanceUID={StudyInstanceUID} // used by drop
-                    // Thumb
-                    altImageText={altImageText}
-                    imageId={imageId}
-                    derivedDisplaySetsNumber={derivedDisplaySetsNumber}
-                    displaySetInstanceUID={displaySetInstanceUID} // used by drop
-                    numImageFrames={numImageFrames}
-                    SeriesDescription={SeriesDescription}
-                    SeriesNumber={SeriesNumber}
-                    hasWarnings={hasWarnings}
-                    hasDerivedDisplaySets={hasDerivedDisplaySets}
-                    // Events
-                    onClick={onThumbnailClick.bind(
-                      undefined,
-                      displaySetInstanceUID
-                    )}
-                    onDoubleClick={onThumbnailDoubleClick}
-                    showProgressBar={showThumbnailProgressBar}
-                  />
+                  <span>{header.text}</span>
                 </div>
-              );
-            });
+                <div
+                  className="study-header-line study-header-uid"
+                  data-tooltip={header.uidTooltip}
+                >
+                  {header.uid}
+                </div>
+              </div>,
+              ...thumbnailElements,
+            ];
           })
           .flat()}
       </div>
     </div>
   );
+}
+
+function getStudyHeader(study, studyIndex) {
+  const { StudyInstanceUID, StudyDescription, StudyDate } = study;
+  const title = StudyDescription || `Study ${studyIndex + 1}`;
+
+  return {
+    text: StudyDate ? `${title} (${StudyDate})` : title,
+    textTooltip: `Study Description: ${StudyDescription ||
+      '-'}\nStudy Date: ${StudyDate || '-'}`,
+    uid: StudyInstanceUID,
+    uidTooltip: `Study Instance UID: ${StudyInstanceUID}`,
+  };
 }
 
 const noop = () => {};
@@ -84,6 +127,8 @@ StudyBrowser.propTypes = {
   studies: PropTypes.arrayOf(
     PropTypes.shape({
       StudyInstanceUID: PropTypes.string.isRequired,
+      StudyDescription: PropTypes.string,
+      StudyDate: PropTypes.string,
       thumbnails: PropTypes.arrayOf(
         PropTypes.shape({
           altImageText: PropTypes.string,
