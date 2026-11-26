@@ -728,7 +728,7 @@ describe('OHIF User Preferences', () => {
       cy.get('body').type('3');
       cy.get('@viewportInfoBottomRight').should(
         'contains.text',
-        'W: 150 L: 90'
+        'W: 200 L: 60'
       );
 
       // Check if hotkey preset is working on viewport
@@ -751,7 +751,7 @@ describe('OHIF User Preferences', () => {
       cy.get('body').type('3');
       cy.get('@viewportInfoBottomRight').should(
         'contains.text',
-        'W: 150 L: 90'
+        'W: 200 L: 60'
       );
 
       // Overlay information from 2nd viewport
